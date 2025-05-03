@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  clerkId         String    @unique
+  email           String    @unique
+  name            String?
+  image       String?
+  createdAt       DateTime  @default(now())
+  platforms       PlatformConnection[]
+  reports         PerformanceReport[]
+}
+
+model PlatformConnection {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  platform        PlatformType
+  accessToken     String   // encrypted
+  refreshToken    String?  // encrypted
+  connectedAt     DateTime @default(now())
+  posts           Post[]
+}
+
+enum PlatformType {
+  X
+  INSTAGRAM
+  LINKEDIN
+  GITHUB
+}
+
+model Post {
+  id              String   @id @default(cuid())
+  platformConn    PlatformConnection @relation(fields: [platformConnId], references: [id])
+  platformConnId  String
+  postId          String   // actual platform post ID
+  url             String
+  content         String?
+  postedAt        DateTime
+  metrics         Metric?  @relation(name: "PostMetric")
+  sentiment       Sentiment? @relation(name: "PostSentiment")
+}
+
+model Metric {
+  id              String   @id @default(cuid())
+  post            Post     @relation(name: "PostMetric", fields: [postId], references: [id])
+  postId          String   @unique
+  likes           Int
+  comments        Int
+  shares          Int
+  views           Int
+  stars           Int       // for GitHub
+  profileClicks   Int
+}
+
+model Sentiment {
+  id              String   @id @default(cuid())
+  post            Post     @relation(name: "PostSentiment", fields: [postId], references: [id])
+  postId          String   @unique
+  score           Float     // -1 to 1
+  label           String    // Positive, Neutral, Negative
+  keywords        String[]
+}
+
+model PerformanceReport {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  generatedAt     DateTime @default(now())
+  content         String   // summary
+  score           Int      // performance points
+  suggestions     String[] // array of tips
+}
