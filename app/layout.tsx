@@ -16,8 +16,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'ORM',
+  title: 'P.R.A.N. \u2013 Public Reputation and Analysis Node',
   description: 'Online Reputation Management',
+  icons: {
+    icon: '/PRAN-icon.png',
+    shortcut: '/PRAN-icon.png',
+    apple: '/PRAN-icon.png',
+  },
 }
 
 export default function RootLayout({

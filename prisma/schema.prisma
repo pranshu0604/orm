@@ -13,28 +13,33 @@ model User {
   clerkId         String    @unique
   email           String    @unique
   name            String?
-  image       String?
+  image           String?
   createdAt       DateTime  @default(now())
   platforms       PlatformConnection[]
   reports         PerformanceReport[]
 }
 
 model PlatformConnection {
-  id              String   @id @default(cuid())
-  user            User     @relation(fields: [userId], references: [id])
+  id              String       @id @default(cuid())
+  user            User         @relation(fields: [userId], references: [id])
   userId          String
   platform        PlatformType
-  accessToken     String   // encrypted
-  refreshToken    String?  // encrypted
-  connectedAt     DateTime @default(now())
+  profileId       String       // Platform's unique user ID (essential)
+  username        String?      // Store username fetched during connection (optional)
+  accessToken     String?      // Encrypted, store only if needed for future API calls
+  refreshToken    String?      // Encrypted, store only if needed (e.g., GitHub for specific actions)
+  scopes          String?      // Scopes granted during OAuth
+  expiresAt       DateTime?    // Access token expiry time (less relevant if not using token)
+  connectedAt     DateTime     @default(now())
   posts           Post[]
+
+  @@unique([userId, platform])
 }
 
 enum PlatformType {
   X
-  INSTAGRAM
-  LINKEDIN
   GITHUB
+  // add linkedin and insta later
 }
 
 model Post {
@@ -47,26 +52,28 @@ model Post {
   postedAt        DateTime
   metrics         Metric?  @relation(name: "PostMetric")
   sentiment       Sentiment? @relation(name: "PostSentiment")
+
+  @@unique([platformConnId, postId])
 }
 
 model Metric {
   id              String   @id @default(cuid())
   post            Post     @relation(name: "PostMetric", fields: [postId], references: [id])
   postId          String   @unique
-  likes           Int
-  comments        Int
-  shares          Int
-  views           Int
-  stars           Int       // for GitHub
-  profileClicks   Int
+  likes           Int?
+  comments        Int?
+  shares          Int?
+  views           Int?
+  stars           Int?
+  profileClicks   Int?
 }
 
 model Sentiment {
   id              String   @id @default(cuid())
   post            Post     @relation(name: "PostSentiment", fields: [postId], references: [id])
   postId          String   @unique
-  score           Float     // -1 to 1
-  label           String    // Positive, Neutral, Negative
+  score           Float
+  label           String
   keywords        String[]
 }
 
@@ -75,7 +82,7 @@ model PerformanceReport {
   user            User     @relation(fields: [userId], references: [id])
   userId          String
   generatedAt     DateTime @default(now())
-  content         String   // summary
-  score           Int      // performance points
-  suggestions     String[] // array of tips
+  content         String
+  score           Int
+  suggestions     String[]
 }
