@@ -1,13 +1,24 @@
 P.R.A.N. – Public Reputation and Analysis Node
 
+## Features
 
-stack:
+### Twitter/X Data Scraping via Nitter
+- Browser-based scraping in development using Playwright
+- Redis-cached instances for better performance 
+- GitHub Actions scheduled updates in production
+- Multiple fallback mechanisms for reliability
 
-nextjs
-tailwindcss
-next-theme
-react-icons
-clerk
-openrouter: google/gemini-2.0-flash-exp:free
-key: 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
-crypto-js
+## Tech Stack
+
+- NextJS
+- TailwindCSS
+- Clerk for authentication
+- OpenRouter (with Gemini models) for AI features
+- Upstash Redis for caching
+- Playwright for browser automation (dev only)
+- GitHub Actions for scheduled tasks
+- Crypto-js for encryption
+
+## Configuration
+
+See the [Nitter Scraper Setup Guide](./docs/nitter-scraper-setup.md) for detailed instructions on setting up the Twitter/X data scraping functionality.
