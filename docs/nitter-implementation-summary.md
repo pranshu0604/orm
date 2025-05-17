@@ -2,7 +2,7 @@
 
 ## Completed Implementation
 
-We've successfully implemented a reliable system for finding and using working Nitter instances that:
+The implementation is a reliable system for finding and using working Nitter instances that:
 
 1. **Works in development and production**:
    - Uses Playwright in development for browser-based scraping
