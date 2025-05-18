@@ -1,6 +1,16 @@
 # Scripts Directory
 
+> **Note**: These scripts support functionality that is still under development. Some features may not be fully implemented yet.
+
 This directory contains utility scripts for managing the PRAN application and its components.
+
+## Development Status
+
+| Script | Status |
+|--------|--------|
+| Redis connectivity check | Implemented ✓ |
+| Nitter instance updating | In development |
+| Production testing | In development |
 
 ## Nitter Scraper Scripts
 

@@ -2,6 +2,8 @@
 
 PRAN is an all-in-one platform for managing your online presence and reputation across multiple social media platforms. It helps users analyze, track, and improve their digital footprint with AI-powered insights.
 
+> **Note**: PRAN is currently under active development. This document describes both implemented features and planned functionality.
+
 ## Key Features
 
 ### Cross-Platform Social Media Integration
@@ -10,10 +12,10 @@ PRAN is an all-in-one platform for managing your online presence and reputation 
 - Secure token storage with encryption for API access
 
 ### Data Analysis & Insights
-- Post sentiment analysis with AI
-- Engagement metrics tracking
-- Performance reports with actionable insights
-- AI-generated improvement suggestions
+- Post sentiment analysis with AI *(under development)*
+- Engagement metrics tracking *(under development)*
+- Performance reports with actionable insights *(under development)*
+- AI-generated improvement suggestions *(under development)*
 
 ### Twitter/X Data Access via Nitter
 - Browser-based scraping in development using Playwright
@@ -45,12 +47,12 @@ PRAN is an all-in-one platform for managing your online presence and reputation 
 
 ## Documentation
 
-- [Main Project Documentation](./docs/README.md) - Comprehensive overview of the entire system
-- [Installation Guide](./docs/installation-guide.md) - Complete setup instructions for developers
-- [Deployment Guide](./docs/deployment-guide.md) - Instructions for deploying to production
-- [Technical Implementation Details](./docs/technical-details.md) - In-depth technical information for developers
-- [API Documentation](./docs/api-documentation.md) - Reference guide for API endpoints and usage
-- [Platform Integration Examples](./docs/platform-integration-examples.md) - Detailed examples for platform integrations
+- [Main Project Documentation](./docs/README.md) - Overview of the current and planned features
+- [Development Roadmap](./docs/roadmap.md) - Current status and future development plans
+- [Installation Guide](./docs/installation-guide.md) - Setup instructions for development
+- [Technical Implementation Details](./docs/technical-details.md) - Technical information for developers
+- [API Documentation](./docs/api-documentation.md) - Reference for current API endpoints
+- [Platform Integration Examples](./docs/platform-integration-examples.md) - Examples for platform integrations
 - [Contributor's Guide](./docs/contributors-guide.md) - Guidelines for contributing to the project
-- [AI Integration](./docs/ai-integration.md) - Documentation about AI features and implementation
+- [AI Integration](./docs/ai-integration.md) - Documentation for planned AI features
 - [FAQ](./docs/faq.md) - Frequently asked questions about the project

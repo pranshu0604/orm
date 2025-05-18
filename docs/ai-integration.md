@@ -1,14 +1,16 @@
 # AI Integration in PRAN
 
-This document provides examples and guidelines for working with the AI integration features in PRAN.
+> **Important**: The AI features described in this document are currently under development and not yet fully implemented. This document outlines the planned architecture and functionality.
+
+This document provides examples and guidelines for working with the planned AI integration features in PRAN.
 
 ## Overview
 
-PRAN uses OpenRouter to access various AI models for content analysis and generation. This integration enables:
+PRAN plans to use OpenRouter to access various AI models for content analysis and generation. This integration will enable:
 
-1. Analyzing post sentiment
-2. Generating performance reports
-3. Providing content improvement suggestions
+1. Analyzing post sentiment *(planned)*
+2. Generating performance reports *(planned)*
+3. Providing content improvement suggestions *(planned)*
 4. Answering user questions about online reputation
 
 ## Implementation Details
@@ -257,4 +259,4 @@ In upcoming releases, we plan to enhance AI integration with:
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 18, 2023

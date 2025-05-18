@@ -1,27 +1,20 @@
 # PRAN Contributor's Guide
 
+> **Note**: This project is in early development. Many features described in the documentation are planned but not yet implemented. This guide will help you understand the current structure and contribute to the ongoing development.
+
 This guide is designed to help developers understand how to contribute to the PRAN (Public Reputation and Analysis Node) project.
 
-## Project Structure
+## Project Status
 
-The PRAN project is organized as follows:
+PRAN is currently in the early development phase. The core architecture and authentication system are being established, with many features still in the planning stages.
 
-```
-app/              # Next.js App Router structure
-├── actions/      # Server actions for data fetching and mutations
-├── api/          # API routes for external integrations
-├── hooks/        # React hooks for client-side logic
-├── providers/    # Context providers for state management
-└── settings/     # Settings pages for user configurations
-components/       # Reusable UI components
-docs/             # Project documentation
-lib/              # Core utility libraries
-├── scrapers/     # Twitter/Nitter scraping utilities
-prisma/           # Database schema and migrations
-public/           # Static assets and diagrams
-scripts/          # Utility scripts for development and deployment
-utils/            # Helper functions and utilities
-```
+Current implementation status:
+- Basic Next.js app structure ✓
+- Authentication framework (Clerk + NextAuth) ✓
+- Database schema design ✓
+- Twitter/X data scraping via Nitter (in progress)
+- Platform integrations (partial implementation)
+- AI features (planned)
 
 ## Development Workflow
 

@@ -1,13 +1,15 @@
 # PRAN API Documentation
 
+> **Development Status**: This document describes both currently implemented API endpoints and planned functionality. The API is under active development and subject to change.
+
 This document provides information about the API endpoints available in the PRAN system.
 
-## Authentication
+## Current Implementation Status
 
-PRAN uses a dual authentication system:
-
-1. **Clerk** - Primary user authentication
-2. **NextAuth** - Platform-specific OAuth connections
+- **User Synchronization API**: Implemented for Clerk integration
+- **NextAuth Authentication**: Implemented for platform OAuth connections
+- **Server Actions**: Partially implemented
+- **AI Analysis**: Planned for future development
 
 ### Authorization
 

@@ -1,14 +1,21 @@
 # PRAN - Public Reputation and Analysis Node Documentation
 
+> **Important**: PRAN is currently in early development. This documentation describes both the current implementation and planned features. Many sections describe the intended architecture rather than fully implemented functionality.
+
 ## Overview
 
 PRAN is a comprehensive online reputation management platform that helps users monitor, analyze, and improve their presence across multiple digital platforms. The system integrates with social media platforms, analyzes user content, and provides AI-powered insights and recommendations.
 
-## Table of Contents
+## Development Status
 
-1. [System Architecture](#system-architecture)
-2. [Authentication System](#authentication-system)
-3. [Platform Connections](#platform-connections)
+| Component | Status |
+|-----------|--------|
+| Core architecture | Initial implementation ✓ |
+| Authentication system | Basic implementation ✓ |
+| Platform connections | Partial implementation ✓ |
+| Data analysis | Planned |
+| AI features | Planned |
+| Twitter/X Nitter scraping | In development |
 4. [Data Analysis & AI Features](#data-analysis--ai-features)
 5. [Twitter/X Data Scraping](#twitter-x-data-scraping)
 6. [Setup Instructions](#setup-instructions)

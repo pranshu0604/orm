@@ -1,6 +1,20 @@
 # Technical Implementation Details
 
-This document provides in-depth technical details about the PRAN (Public Reputation and Analysis Node) implementation for developers who need to modify or extend the system.
+> **Important**: This document describes both implemented features and planned functionality. PRAN is currently in early development, and many features outlined here are not yet implemented.
+
+This document provides technical details about the PRAN (Public Reputation and Analysis Node) implementation for developers who need to modify or extend the system.
+
+## Implementation Status
+
+| Component | Status |
+|-----------|--------|
+| Next.js app structure | Implemented ✓ |
+| Authentication system | Basic implementation ✓ |
+| Database schema | Implemented ✓ |
+| Platform API integration | Partial implementation ✓ |
+| Twitter/X data scraping | In development |
+| AI analysis | Planned |
+| User dashboard | Planned |
 
 ## Project Structure
 

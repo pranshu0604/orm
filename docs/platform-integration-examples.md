@@ -1,13 +1,16 @@
 # Platform Integration Examples
 
-This document provides detailed examples and implementation guidelines for platform integrations in PRAN beyond the default Twitter/X integration.
+> **Important Notice**: This document describes both currently implemented functionality and planned features. Many of the examples shown here represent the intended architecture rather than fully implemented features.
+
+This document provides examples and implementation guidelines for platform integrations in PRAN.
+
+## Current Implementation Status
+
+- **Twitter/X**: Basic OAuth connection implemented; data scraping via Nitter in development
+- **GitHub**: OAuth connection implemented; data retrieval and analysis features planned
+- **Additional platforms**: Planned for future development
 
 ## Supported Platforms
-
-PRAN currently supports the following platforms:
-- Twitter/X (primary platform)
-- GitHub
-- Additional platforms (as described in this document)
 
 ## GitHub Integration
 

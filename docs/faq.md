@@ -1,5 +1,7 @@
 # PRAN - Frequently Asked Questions
 
+> **Note**: This document addresses questions about the PRAN project, which is currently in early development. Some features mentioned are planned but not yet implemented.
+
 This document addresses common questions that developers might have when working with the PRAN (Public Reputation and Analysis Node) project.
 
 ## General Questions
@@ -8,7 +10,19 @@ This document addresses common questions that developers might have when working
 
 PRAN (Public Reputation and Analysis Node) is a web application that helps users manage their online reputation across various platforms. It collects data from connected social accounts, provides analytics, and offers AI-powered insights to improve online presence.
 
-### What technologies does PRAN use?
+### What is the current development status?
+
+PRAN is in early development. Currently implemented:
+- Basic project structure with Next.js
+- Authentication framework (Clerk + NextAuth)
+- Database schema
+- Initial Twitter/X data access via Nitter (in progress)
+
+Features under development or planned:
+- Platform API integrations
+- Data analysis capabilities
+- AI-powered insights
+- User dashboard with metrics
 
 PRAN is built using:
 - **Frontend**: Next.js 14, React, Tailwind CSS

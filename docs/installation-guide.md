@@ -1,6 +1,8 @@
 # PRAN Installation Guide
 
-This guide provides step-by-step instructions for setting up the PRAN (Public Reputation and Analysis Node) project for both development and production environments.
+> **Important**: This guide covers installation for a project that is currently in early development. Some features mentioned may not be fully implemented yet.
+
+This guide provides instructions for setting up the PRAN (Public Reputation and Analysis Node) project for development.
 
 ## Prerequisites
 
