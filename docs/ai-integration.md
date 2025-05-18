@@ -6,39 +6,207 @@ This document provides examples and guidelines for working with the planned AI i
 
 ## Overview
 
-PRAN plans to use OpenRouter to access various AI models for content analysis and generation. This integration will enable:
+PRAN plans to use OpenRouter to access various AI models for content analysis and generation. The UI will have dedicated buttons for different analysis types, and the backend will automatically determine and return the appropriate responses.
 
-1. Analyzing post sentiment *(planned)*
-2. Generating performance reports *(planned)*
-3. Providing content improvement suggestions *(planned)*
-4. Answering user questions about online reputation
+Key features will include:
+
+1. Automatic post sentiment analysis *(planned)*
+2. One-click performance reports *(planned)*
+3. Integrated content improvement suggestions *(planned)*
+4. Overall reputation analysis dashboard *(planned)*
 
 ## Implementation Details
 
-### Client-Side Integration
+### Current Test Implementation
 
-The application provides a streaming AI chat component:
+The current implementation is for testing OpenRouter connectivity and streaming responses:
 
 ```tsx
-// components/AiChat.tsx
+// app/ai/page.tsx (test implementation only)
 'use client'
 
-import { useState } from 'react'
-import { getStreamingAiCompletion } from '@/app/actions/ai'
+import { useState } from 'react';
+import { getStreamingAiCompletion } from '../actions/ai';
 
-export default function AiChat() {
-  const [prompt, setPrompt] = useState('')
-  const [response, setResponse] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+export default function AiTestPage() {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
-    setResponse('')
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!prompt || isLoading) return;
+
+    setIsLoading(true);
+    setResponse('');
+    setError(null);
 
     try {
-      const stream = await getStreamingAiCompletion(prompt)
-      const reader = stream.getReader()
+      const stream = await getStreamingAiCompletion(prompt);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setResponse((prev) => prev + chunk);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Component rendering...
+}
+```
+
+### Server Action Implementation
+
+```typescript
+// app/actions/ai.ts (test implementation)
+'use server'
+
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+  defaultHeaders: {
+    "X-Title": "P.R.A.N. - Public Reputation and Analysis Node",
+  },
+});
+
+export async function getStreamingAiCompletion(userPrompt: string): Promise<ReadableStream<Uint8Array>> {
+  const messages = [
+    {
+      role: "system",
+      content: "You are a helpful assistant for online reputation management."
+    },
+    {
+      role: "user",
+      content: userPrompt
+    }
+  ];
+
+  const stream = await openai.chat.completions.create({
+    model: "google/gemma-3-27b-it:free", 
+    messages: messages,
+    stream: true, 
+  });
+
+  // Create and return ReadableStream...
+}
+```
+
+### Planned UI Implementation
+
+The final implementation will have:
+
+1. **Analysis Dashboard**:
+   - Buttons for different analysis types
+   - Automated collection of relevant data
+   - Integrated visualizations of results
+
+2. **Automatic Data Collection**:
+   - System will gather profile data
+   - System will gather recent posts
+   - System will gather engagement metrics
+   - No manual prompt entry required
+
+3. **Backend Analysis Types**:
+   - Content sentiment analysis
+   - Audience engagement patterns
+   - Performance trending
+   - Improvement recommendations
+
+```tsx
+// Planned components (not yet implemented)
+function ReputationDashboard() {
+  return (
+    <div className="dashboard-grid">
+      <SentimentAnalysisCard />
+      <EngagementMetricsCard />
+      <ContentSuggestionsCard />
+      <PerformanceReportCard />
+    </div>
+  )
+}
+
+function SentimentAnalysisCard() {
+  // Button triggers sentiment analysis
+  // No manual prompt entry required
+  return (
+    <Card>
+      <CardHeader>
+        <h3>Content Sentiment</h3>
+      </CardHeader>
+      <CardBody>
+        {/* Results visualization */}
+      </CardBody>
+      <CardFooter>
+        <Button onClick={runSentimentAnalysis}>
+          Refresh Analysis
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+```
+
+### Backend Implementation
+
+The backend will implement specialized AI functions:
+
+```typescript
+// Planned implementation (not yet built)
+export async function analyzeSentiment(userId: string): Promise<SentimentResult> {
+  // 1. Fetch user's recent posts
+  // 2. Prepare data for AI analysis
+  // 3. Generate sentiment analysis
+  // 4. Return structured results
+}
+
+export async function generateContentSuggestions(userId: string): Promise<ContentSuggestions> {
+  // 1. Analyze recent content performance
+  // 2. Generate AI-powered suggestions
+  // 3. Return actionable recommendations
+}
+
+export async function createPerformanceReport(userId: string): Promise<PerformanceReport> {
+  // 1. Collect metrics across platforms
+  // 2. Generate performance insights
+  // 3. Return structured report data
+}
+```
+
+## Working with the AI System
+
+The AI system is designed to work automatically. Developers should:
+
+1. Use the provided UI components
+2. Connect to the appropriate backend functions
+3. Handle and display the structured results
+
+The system does not require users to manually craft prompts - the UI buttons and automated analysis pipeline will handle all interactions with the AI service.
+
+## Future Enhancements
+
+In upcoming releases, we plan to enhance AI integration with:
+
+1. Direct API connections to social platforms for real-time analysis
+2. Custom-trained models specific to reputation management
+3. Scheduled automated reports and alerts
+4. Visual content analysis capabilities
+5. Competitive analysis features
+
+---
+
+Last updated: May 18, 2023
       
       while (true) {
         const { done, value } = await reader.read()

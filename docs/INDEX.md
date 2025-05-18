@@ -23,14 +23,6 @@ This folder contains documentation for the PRAN (Public Reputation and Analysis 
 
 - [**Scripts Documentation**](../scripts/README.md) - Documentation for utility scripts used in development and deployment
 
-## Legacy Documentation
-
-The following documentation is archived for reference but may not reflect the current state of the project:
-
-- [**Nitter Implementation Summary**](./archive/nitter-implementation-summary.md)
-- [**Nitter Scraper Setup**](./archive/nitter-scraper-setup.md)
-- [**Nitter Deployment Checklist**](./archive/nitter-deployment-checklist.md)
-
 ## Diagrams
 
 - **Platform Architecture** - See [images/platform-architecture.png](../public/images/platform-architecture.png)
@@ -38,6 +30,6 @@ The following documentation is archived for reference but may not reflect the cu
 
 ---
 
-Last updated: May 18, 2023
+Last updated: May 18, 2025
 
 **Project Status**: PRAN is in early development. The documentation describes the intended architecture and functionality, with many features still being implemented.
