@@ -147,9 +147,6 @@ In upcoming releases, we plan to enhance AI integration with:
 
 ---
 
-Last updated: May 18, 2025
-
-
 ## Best Practices
 
 1. **Provide Clear Context**: Include specific metrics, content examples, and goals in the system prompts
@@ -184,4 +181,4 @@ In upcoming releases, we plan to enhance AI integration with:
 
 ---
 
-Last updated: May 18, 2023
+Last updated: May 18, 2025
