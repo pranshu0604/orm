@@ -1,27 +1,440 @@
 # Technical Implementation Details
 
-This document provides in-depth technical details about the Nitter scraper implementation for developers who need to modify or extend the system.
+This document provides in-depth technical details about the PRAN (Public Reputation and Analysis Node) implementation for developers who need to modify or extend the system.
 
-## Code Structure
+## Project Structure
 
-### Core Files
+```
+app/                  # Next.js app router structure
+  actions/            # Server actions
+  api/                # API routes
+  hooks/              # React hooks
+  providers/          # React context providers
+  settings/           # Settings pages
+components/           # Reusable UI components
+docs/                 # Documentation
+lib/                  # Core libraries
+  scrapers/           # Nitter scraper implementation
+prisma/               # Database schema and migrations
+public/               # Static assets
+scripts/              # Utility scripts
+utils/                # Helper utilities
+```
 
-- **`lib/scrapers/getWorkingNitter.ts`**: Main logic for finding working Nitter instances
-- **`lib/scrapers/isAlive.ts`**: Functions to verify if a Nitter instance is working
-- **`lib/scrapers/getCachedNitter.ts`**: Interface for simpler access to working instances
-- **`scripts/update-nitter-instances.js`**: Script run by GitHub Actions to update Redis
+## Core Systems
 
-### GitHub Actions
+The PRAN application consists of several core systems:
 
-- **`.github/workflows/update-nitter.yml`**: Workflow definition that runs every 6 hours
+1. **User Management System**: Handles user authentication and profile data
+2. **Platform Connections System**: Manages integration with social platforms
+3. **Data Collection System**: Gathers posts and metrics from connected platforms
+4. **Analysis System**: Uses AI to analyze content and provide insights
+5. **Nitter Scraper System**: Specialized Twitter/X data access
 
-### Test Files
+## Authentication Architecture
 
-- **`__tests__/scrapers.test.ts`**: Tests for the scraper functionality
-- **`scripts/test-production.js`**: Tests the production configuration
-- **`scripts/test-production-simple.js`**: Simplified version for quick checks
+### Dual Authentication System
 
-## Implementation Details
+The project uses a dual authentication approach:
+
+1. **Clerk** for primary user authentication:
+   - Handles user registration, login, and profile management
+   - Provides secure session management
+   - Syncs user data to the application database
+
+2. **NextAuth** for platform connections:
+   - Manages OAuth flows with Twitter/X and GitHub
+   - Securely handles and stores access tokens
+   - Integrates with the primary user system
+
+### Authentication Flow
+
+```
+┌───────────┐         ┌───────────┐         ┌───────────┐
+│           │         │           │         │           │
+│   User    │────────▶│   Clerk   │────────▶│ Database  │
+│           │         │           │         │           │
+└───────────┘         └───────────┘         └───────────┘
+                                                  │
+                                                  │
+                                                  ▼
+┌───────────┐         ┌───────────┐         ┌───────────┐
+│           │         │           │         │           │
+│ Platform  │◀────────│ NextAuth  │◀────────│   PRAN    │
+│           │         │           │         │   App     │
+└───────────┘         └───────────┘         └───────────┘
+```
+
+### User Synchronization
+
+When a user authenticates with Clerk:
+
+1. The user is redirected to the application
+2. The `useSyncClient.tsx` hook triggers the user sync API
+3. The `/api/sync-user/route.ts` endpoint creates or updates the user in the database
+4. The user can then connect platforms using NextAuth
+
+## Data Model
+
+The data model is defined using Prisma ORM and consists of the following key entities:
+
+### User
+
+The `User` model represents application users:
+
+```prisma
+model User {
+  id              String    @id @default(cuid())
+  clerkId         String    @unique
+  email           String    @unique
+  name            String?
+  image           String?
+  createdAt       DateTime  @default(now())
+  platforms       PlatformConnection[]
+  reports         PerformanceReport[]
+}
+```
+
+- `clerkId`: Links the user to their Clerk authentication
+- `platforms`: One-to-many relationship with platform connections
+- `reports`: One-to-many relationship with performance reports
+
+### Platform Connections
+
+The `PlatformConnection` model represents linked social platforms:
+
+```prisma
+model PlatformConnection {
+  id              String       @id @default(cuid())
+  user            User         @relation(fields: [userId], references: [id])
+  userId          String
+  platform        PlatformType
+  profileId       String       // Platform's unique user ID
+  username        String?      // Optional username
+  accessToken     String?      // Encrypted token
+  refreshToken    String?      // Encrypted refresh token
+  scopes          String?      // OAuth scopes
+  expiresAt       DateTime?    // Token expiry
+  connectedAt     DateTime     @default(now())
+  posts           Post[]
+
+  @@unique([userId, platform])
+}
+
+enum PlatformType {
+  X
+  GITHUB
+  // More platforms to be added
+}
+```
+
+- `accessToken` and `refreshToken`: Encrypted using the encryption library
+- `@@unique`: Constraint ensures one connection per platform per user
+
+### Posts and Metrics
+
+The application tracks posts and their metrics:
+
+```prisma
+model Post {
+  id              String   @id @default(cuid())
+  platformConn    PlatformConnection @relation(fields: [platformConnId], references: [id])
+  platformConnId  String
+  postId          String   // Platform-specific post ID
+  url             String
+  content         String?
+  postedAt        DateTime
+  metrics         Metric?  @relation(name: "PostMetric")
+  sentiment       Sentiment? @relation(name: "PostSentiment")
+
+  @@unique([platformConnId, postId])
+}
+
+model Metric {
+  id              String   @id @default(cuid())
+  post            Post     @relation(name: "PostMetric", fields: [postId], references: [id])
+  postId          String   @unique
+  likes           Int?
+  comments        Int?
+  shares          Int?
+  views           Int?
+  stars           Int?
+  profileClicks   Int?
+}
+
+model Sentiment {
+  id              String   @id @default(cuid())
+  post            Post     @relation(name: "PostSentiment", fields: [postId], references: [id])
+  postId          String   @unique
+  score           Float
+  label           String
+  keywords        String[]
+}
+```
+
+### Performance Reports
+
+The system generates performance reports for users:
+
+```prisma
+model PerformanceReport {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  generatedAt     DateTime @default(now())
+  content         String
+  score           Int
+  suggestions     String[]
+}
+```
+
+## Authentication Implementation
+
+### Clerk Integration
+
+The application uses Clerk for primary user authentication:
+
+```typescript
+// middleware.ts
+import { authMiddleware } from "@clerk/nextjs";
+
+export default authMiddleware({
+  // Public routes that don't require authentication
+  publicRoutes: ["/", "/api/sync-user", "/api/auth(.*)"],
+});
+
+export const config = {
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+};
+```
+
+User synchronization is handled by the sync-user API endpoint:
+
+```typescript
+// app/api/sync-user/route.ts (simplified)
+export async function POST(req: Request) {
+  const { userId } = await req.json();
+  
+  // Get user details from Clerk
+  const clerkUser = await clerkClient.users.getUser(userId);
+  
+  // Sync to database using Prisma
+  await prisma.user.upsert({
+    where: { clerkId: userId },
+    update: { /* user data */ },
+    create: { /* user data */ },
+  });
+}
+```
+
+### NextAuth Implementation
+
+NextAuth is used specifically for platform connections:
+
+```typescript
+// app/api/auth/[...nextauth]/route.ts (simplified)
+export const authOptions: AuthOptions = {
+  providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      // Configure scopes
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_API_KEY!,
+      clientSecret: process.env.TWITTER_API_SECRET!,
+      version: "2.0",
+      // Configure OAuth 2.0 settings
+    }),
+  ],
+  callbacks: {
+    // Custom callbacks for syncing with main user system
+  },
+};
+
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
+```
+
+### Token Encryption
+
+Sensitive OAuth tokens are encrypted before storage:
+
+```typescript
+// lib/encryption.ts
+import CryptoJS from 'crypto-js';
+
+// Get encryption key from environment
+const secretKey = process.env.ENCRYPTION_SECRET_KEY;
+
+export function encryptToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  try {
+    return CryptoJS.AES.encrypt(token, getKey()).toString();
+  } catch (error) {
+    console.error("Encryption failed:", error);
+    return null;
+  }
+}
+
+export function decryptToken(encryptedToken: string | null | undefined): string | null {
+  if (!encryptedToken) return null;
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedToken, getKey());
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    return decrypted || null;
+  } catch (error) {
+    console.error("Decryption failed:", error);
+    return null;
+  }
+}
+```
+
+## Server Actions
+
+The application uses Next.js server actions for core functionality:
+
+### Platform Connections
+
+```typescript
+// app/actions/platformActions.ts
+'use server';
+
+import { PrismaClient, PlatformConnection, PlatformType } from '@prisma/client';
+import { auth } from '@clerk/nextjs/server';
+import { revalidatePath } from 'next/cache';
+
+// Get platform connections for the authenticated user
+export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> {
+  const authData = await auth();
+  const clerkId = authData.userId;
+  
+  if (!clerkId) {
+    throw new Error("User not authenticated.");
+  }
+  
+  // Retrieve user and connections from database
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true }
+  });
+  
+  // Fetch and return connections
+  // ...
+}
+
+// Disconnect a platform
+export async function disconnectPlatformAction(platform: PlatformType): Promise<boolean> {
+  // Implementation
+}
+```
+
+### AI Integration
+
+The application uses OpenRouter to access AI models:
+
+```typescript
+// app/actions/ai.ts (simplified)
+'use server'
+
+import OpenAI from 'openai';
+import { Stream } from 'openai/streaming'; 
+
+const openai = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+  defaultHeaders: {
+    "X-Title": "P.R.A.N. - Public Reputation and Analysis Node",
+  },
+});
+
+export async function getStreamingAiCompletion(userPrompt: string): Promise<ReadableStream<Uint8Array>> {
+  const messages = [
+    {
+      role: "system",
+      content: "You are a helpful assistant for online reputation management."
+    },
+    {
+      role: "user",
+      content: userPrompt
+    }
+  ];
+
+  const stream = await openai.chat.completions.create({
+    model: "google/gemma-3-27b-it:free", 
+    messages: messages,
+    stream: true, 
+  });
+  
+  // Transform stream to ReadableStream
+  // ...
+}
+```
+
+## UI Components
+
+The application uses React components with a focus on responsive design and theme support:
+
+### Layout and Theming
+
+```tsx
+// components/LayoutHeader.tsx
+'use client'
+
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs"
+import { useState, useEffect } from 'react';
+import ThemeSwitch from "./ThemeSwitch";
+
+const LayoutHeader = () => {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Theme-specific styling with Tailwind
+    const headerClasses = "flex justify-end items-center p-4 gap-4 h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700";
+
+    // SSR-safe rendering
+    if (!isMounted) {
+        return <header className={headerClasses}></header>;
+    }
+
+    return (
+        <header className={headerClasses}>
+            <ThemeSwitch />
+            <SignedOut>
+              <SignInButton />
+              <SignUpButton />
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
+        </header>
+    )
+}
+```
+
+### Theme Implementation
+
+The application supports light and dark themes using next-themes:
+
+```tsx
+// app/providers/index.tsx
+'use client'
+
+import { ThemeProvider } from 'next-themes';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </ThemeProvider>
+  );
+}
+```
+
+## Nitter Scraper Implementation
 
 ### Conditional Imports
 

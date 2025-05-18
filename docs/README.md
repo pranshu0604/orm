@@ -1,25 +1,143 @@
-# Nitter Scraper Documentation
+# PRAN - Public Reputation and Analysis Node Documentation
 
 ## Overview
 
-This project includes a reliable system for finding and using working Nitter instances to access Twitter data without using the official Twitter API. The implementation bypasses anti-scraping measures using a hybrid approach with browser automation, Redis caching, and GitHub Actions.
+PRAN is a comprehensive online reputation management platform that helps users monitor, analyze, and improve their presence across multiple digital platforms. The system integrates with social media platforms, analyzes user content, and provides AI-powered insights and recommendations.
 
 ## Table of Contents
 
-1. [Architecture](#architecture)
-2. [Setup Instructions](#setup-instructions)
-3. [Deployment Checklist](#deployment-checklist)
-4. [How It Works](#how-it-works)
-5. [Maintenance](#maintenance)
-6. [Troubleshooting](#troubleshooting)
+1. [System Architecture](#system-architecture)
+2. [Authentication System](#authentication-system)
+3. [Platform Connections](#platform-connections)
+4. [Data Analysis & AI Features](#data-analysis--ai-features)
+5. [Twitter/X Data Scraping](#twitter-x-data-scraping)
+6. [Setup Instructions](#setup-instructions)
+7. [Deployment Checklist](#deployment-checklist)
+8. [Maintenance](#maintenance)
+9. [Troubleshooting](#troubleshooting)
 
-## Architecture
+## System Architecture
+
+PRAN uses a modern web architecture with the following components:
+
+- **Next.js (App Router)**: Core framework for the frontend and API routes
+- **PostgreSQL Database**: Storage for user data, platform connections, and analytics
+- **Redis Cache**: For performance optimization and storing ephemeral data
+- **AI Integration**: Via OpenRouter API for sentiment analysis and content suggestions
+- **Authentication**: Dual-system approach with Clerk and NextAuth
+- **Background Jobs**: GitHub Actions for scheduled tasks
+
+### Core Components
+
+1. **User Management**:
+   - User registration and authentication via Clerk
+   - Profile data synchronization between Clerk and database
+   - User settings and preferences
+
+2. **Platform Connections**:
+   - Integration with X/Twitter and GitHub via NextAuth
+   - Secure token storage for API access
+   - Connection management UI
+
+3. **Content Analysis**:
+   - Post collection from connected platforms
+   - Sentiment analysis using AI models
+   - Metrics tracking and storage
+
+4. **Reporting System**:
+   - Performance reports generation
+   - Trend analysis and visualization
+   - Suggestions for improvement
+
+## Authentication System
+
+PRAN uses a dual authentication approach:
+
+### Primary Authentication (Clerk)
+
+Clerk handles the main user authentication:
+
+- Sign-up and sign-in with email, Google, or Apple
+- User profile management
+- Session handling and security
+
+When a user signs in with Clerk:
+1. The system authenticates the user via Clerk's SDK
+2. A webhook synchronizes user data to the PostgreSQL database
+3. The user can then access the application features
+
+### Platform Connections (NextAuth)
+
+NextAuth is used specifically for connecting to social platforms:
+
+- OAuth integration with Twitter/X
+- OAuth integration with GitHub
+- Secure token storage and management
+
+When a user connects a platform:
+1. NextAuth initiates the OAuth flow with the platform
+2. Upon successful authentication, tokens are encrypted and stored
+3. The connection is recorded in the database with the user's ID
+
+## Platform Connections
+
+PRAN supports connecting to multiple platforms:
+
+### X/Twitter Integration
+
+- Connect via OAuth 2.0
+- Scope includes: `users.read`, `tweet.read`, `offline.access`
+- Data collected: user profile, tweets, engagement metrics
+
+### GitHub Integration
+
+- Connect via OAuth
+- Scope includes: `read:user`, `user:email`
+- Data collected: profile, repositories, stars, contributions
+
+### Connection Management
+
+Users can:
+- Connect new platforms
+- View connection status
+- Disconnect platforms
+- Update existing connections
+
+## Data Analysis & AI Features
+
+PRAN uses AI to analyze user content and provide insights:
+
+### Sentiment Analysis
+
+- Posts are analyzed for positive, negative, or neutral sentiment
+- Key themes and topics are extracted
+- Potentially problematic content is flagged
+
+### Metrics Tracking
+
+For each post, the system tracks:
+- Likes, comments, shares, views
+- Audience engagement rates
+- Click-through rates where available
+
+### AI-Generated Insights
+
+Using OpenRouter (with Gemini models), the system provides:
+- Content improvement suggestions
+- Audience growth recommendations
+- Crisis management advice when negative sentiment is detected
+
+## Twitter/X Data Scraping
+
+PRAN includes a specialized system for accessing Twitter data without API limitations using Nitter instances:
+
+### Architecture
 
 The system implements a hybrid approach to finding and using working Nitter instances:
 
 ![Nitter Scraper Architecture](/public/images/nitter-scraper-architecture.png)
 
-### Architecture Components and Flows
+#### Architecture Components and Flows
 
 1. **Web Application**
    - The main app that needs Twitter data via Nitter
@@ -103,32 +221,97 @@ The system implements a hybrid approach to finding and using working Nitter inst
 Add the following environment variables to your project:
 
 ```
+# Database
+DATABASE_URL="your_postgresql_connection_string"
+
+# Authentication - Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+
+# Authentication - NextAuth
+NEXTAUTH_URL=your_site_url
+NEXTAUTH_SECRET=your_nextauth_secret
+
+# Platform API Keys
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+TWITTER_API_KEY=your_twitter_api_key
+TWITTER_API_SECRET=your_twitter_api_secret
+
+# AI Integration
+OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Caching
 UPSTASH_REDIS_REST_URL=your_upstash_redis_url
 UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+
+# Security
+ENCRYPTION_SECRET_KEY=your_encryption_secret
 ```
 
 For local development, add these to your `.env.local` file.
 
 For production, add these as secrets in your repository settings and in your Vercel project settings.
 
-### 2. GitHub Actions Setup
+### 2. Database Setup
 
-The GitHub Action is configured to run every 6 hours to update the Redis cache with working Nitter instances.
+1. Create a PostgreSQL database (Neon recommended)
+2. Initialize the database with Prisma:
 
-Make sure you have added the Redis environment variables as GitHub secrets:
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+```bash
+npx prisma migrate dev
+```
 
-### 3. Verify Your Setup
+### 3. Redis Setup
 
-To verify that everything is working:
-
-1. Check Redis connectivity:
+1. Create an Upstash Redis database
+2. Add the connection details to your environment variables
+3. Verify the connection:
    ```bash
    npm run check-redis
    ```
 
-2. Test the scraper:
+### 4. Authentication Setup
+
+1. **Clerk Setup**:
+   - Create a Clerk application at [clerk.com](https://clerk.com)
+   - Configure OAuth providers (Google, Apple) if needed
+   - Get your API keys and add them to environment variables
+   - Configure webhooks for user synchronization
+
+2. **NextAuth Setup**:
+   - Create OAuth applications for each platform:
+     - GitHub: [github.com/settings/developers](https://github.com/settings/developers)
+     - Twitter: [developer.twitter.com](https://developer.twitter.com)
+   - Configure callback URLs for each provider
+   - Add API keys to environment variables
+
+### 5. GitHub Actions Setup
+
+The GitHub Action is configured to run every 6 hours to update the Redis cache with working Nitter instances.
+
+Make sure you have added all the required environment variables as GitHub secrets:
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+### 6. Development Environment
+
+Install dependencies and start the development server:
+
+```bash
+npm install
+npm run dev
+```
+
+### 7. Verify Your Setup
+
+To verify that everything is working:
+
+1. Test user authentication:
+   - Register and login with Clerk
+   - Connect platform accounts with NextAuth
+
+2. Test the Nitter scraper:
    ```bash
    npm run test:scraper
    ```
@@ -142,37 +325,63 @@ To verify that everything is working:
 
 ### Pre-Deployment Steps
 
-1. **Set up Upstash Redis**
-   - Make sure your Upstash Redis instance is created and accessible
+1. **Database Setup**
+   - Deploy a production PostgreSQL database (Neon recommended)
+   - Run migrations: `npx prisma migrate deploy`
+   - Verify database connection
+
+2. **Redis Setup**
+   - Set up Upstash Redis for production
    - Copy the UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
 
-2. **Add Environment Variables to Vercel Project**
-   - UPSTASH_REDIS_REST_URL
-   - UPSTASH_REDIS_REST_TOKEN
-   - (And all other environment variables required by your application)
+3. **Authentication Configuration**
+   - Update Clerk application with production URLs
+   - Update OAuth redirect URIs for Next Auth providers
+   - Configure production webhooks
 
-3. **Add GitHub Repository Secrets**
+4. **Environment Variables**
+   - Add all environment variables to your Vercel project:
+     - DATABASE_URL
+     - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+     - CLERK_SECRET_KEY
+     - NEXTAUTH_URL (set to your production URL)
+     - NEXTAUTH_SECRET
+     - GITHUB_CLIENT_ID
+     - GITHUB_CLIENT_SECRET
+     - TWITTER_API_KEY
+     - TWITTER_API_SECRET
+     - OPENROUTER_API_KEY
+     - UPSTASH_REDIS_REST_URL
+     - UPSTASH_REDIS_REST_TOKEN
+     - ENCRYPTION_SECRET_KEY
+
+5. **GitHub Repository Secrets**
    - Go to your GitHub repository → Settings → Secrets and variables → Actions
-   - Add the following secrets:
+   - Add the following secrets for the Nitter update workflow:
      - UPSTASH_REDIS_REST_URL
      - UPSTASH_REDIS_REST_TOKEN
 
 ### Post-Deployment Steps
 
-1. **Run Initial Verification**
-   - Clone the deployed repository locally
-   - Run `npm run verify:production` to verify the production setup
-   - Make sure all checks pass
+1. **Initial User Synchronization**
+   - Test Clerk authentication with a test user
+   - Verify the user is created in your database
 
-2. **Manually Trigger GitHub Action**
-   - Go to your GitHub repository → Actions → "Update Nitter Instances" workflow
-   - Click "Run workflow" to manually trigger the action
+2. **Platform Connections Test**
+   - Test connecting to Twitter/X and GitHub
+   - Verify connections are stored in the database
+
+3. **Trigger Initial Data Collection**
+   - Manually run the GitHub Action for Nitter instance updates
    - Verify the action completes successfully
 
-3. **Test in Production**
-   - Visit your deployed application
-   - Test the features that rely on Nitter scraping
-   - Check server logs for any errors
+4. **AI Integration Test**
+   - Test the AI functionality to ensure proper integration
+   - Verify sentiment analysis and suggestions generation
+
+5. **End-to-End Testing**
+   - Complete a full user journey from registration to report generation
+   - Test all critical paths and functionality
 
 ## How It Works
 
@@ -203,55 +412,149 @@ To verify that everything is working:
 
 ## Maintenance
 
-- Periodically check the working status of Nitter instances in your Redis cache
-- Monitor GitHub Action runs to ensure they're successfully updating the cache
-- Update the hardcoded fallback list of instances if you notice changes in reliability
+### Routine Tasks
 
-### Updating Fallback Instances
+1. **Database Maintenance**:
+   - Regularly monitor database size and performance
+   - Run `VACUUM` and other maintenance operations as needed
+   - Consider data retention policies for post data
 
-The hardcoded fallback instances are defined in two places:
+2. **Authentication System**:
+   - Keep Clerk and NextAuth packages updated
+   - Periodically rotate OAuth secrets and tokens
+   - Review authentication logs for unusual activity
 
-1. `lib/scrapers/getWorkingNitter.ts`
-2. `scripts/update-nitter-instances.js`
+3. **Nitter Instances**:
+   - Update hardcoded fallback instances quarterly
+   - Monitor GitHub Actions logs for scraping reliability
+   - Test the scraper manually if issues are reported
 
-When updating, consider:
-- Current uptime percentage
-- Consistency of availability
-- Geographic distribution (for redundancy)
+4. **AI Integration**:
+   - Stay updated on OpenRouter API changes
+   - Monitor AI request costs and usage
+   - Periodically review and refine AI prompts for better results
+
+### Monitoring Recommendations
+
+1. **Error Tracking**:
+   - Set up error logging with a service like Sentry
+   - Monitor failed authentication attempts
+   - Track API failures and connection issues
+
+2. **Performance Monitoring**:
+   - Monitor Next.js build and page load times
+   - Track Redis cache hit rates
+   - Monitor database query performance
+
+3. **Usage Analytics**:
+   - Track platform connection success rates
+   - Monitor user engagement with features
+   - Track AI feature usage and effectiveness
+
+### Update Procedures
+
+1. **Updating Nitter Fallback Instances**:
+   - Maintain a list of reliable Nitter instances
+   - Update the hardcoded fallbacks in:
+     - `lib/scrapers/getWorkingNitter.ts`
+     - `scripts/update-nitter-instances.js`
+   - Consider current uptime and geographical distribution
+
+2. **Updating AI Models**:
+   - Update the model name in `app/actions/ai.ts`
+   - Test with a variety of prompts before deploying
+   - Monitor performance and cost changes
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **Redis Connection Issues**: 
-  - Verify your Upstash Redis URL and token
-  - Run `npm run check-redis` to test the connection
-  - Check if your Upstash account is active
+1. **Authentication Problems**:
+   - **Clerk Authentication Failures**:
+     - Verify Clerk API keys are correctly set
+     - Check for issues in the Clerk dashboard
+     - Ensure user synchronization is working
+   
+   - **NextAuth OAuth Issues**:
+     - Check that callback URLs are correct in both provider settings and code
+     - Verify tokens are being properly encrypted and stored
+     - Examine NextAuth logs for detailed error information
 
-- **GitHub Actions Failures**: 
-  - Check the GitHub Action logs in the repository
-  - Verify the secrets are correctly set in GitHub
-  - Make sure Playwright installation is successful
+2. **Database Connectivity**:
+   - Check connection string format and credentials
+   - Verify database permissions for the connected user
+   - Ensure database is accessible from your deployment environment
+   - Check for migrations that need to be applied
 
-- **Scraping Failures**: 
-  - Nitter instances and their status page can change
-  - Update the hardcoded fallback list if needed
-  - Check if the status page format has changed
+3. **Platform API Issues**:
+   - **Twitter/X Rate Limiting**:
+     - Implement backoff strategies for rate-limited requests
+     - Monitor API usage and adjust request frequency
+   
+   - **GitHub API Problems**:
+     - Check token permissions and scopes
+     - Verify OAuth application settings
+
+4. **Nitter Scraper Issues**:
+   - **Redis Connection Problems**: 
+     - Verify Upstash Redis URL and token
+     - Run `npm run check-redis` to test the connection
+   
+   - **GitHub Actions Failures**: 
+     - Check Action logs in the repository
+     - Verify GitHub secrets are correctly set
+     - Ensure Playwright installation succeeds in the workflow
+   
+   - **Scraping Failures**: 
+     - Update hardcoded fallback instances
+     - Check if target page structures have changed
+
+5. **AI Integration Issues**:
+   - Verify the OpenRouter API key is valid
+   - Check if the selected model is still available
+   - Monitor rate limits and quotas
 
 ### Diagnostic Commands
 
 ```bash
-# Check Redis cache status
-npm run check-redis-nitter
+# Check Redis connection and configuration
+npm run check-redis
 
-# Run the scraper manually
+# Check Nitter instances in Redis
+npm run check-nitter
+
+# Test Nitter scraper functionality
+npm run test:scraper
+
+# Test production mode with Nitter scraper
+npm run test:production
+
+# Run quick check of production setup
+npm run test:prod-simple
+
+# Manually update Nitter instances
 npm run update-nitter
 
-# Test production setup
-npm run test-production
+# Simulate GitHub Action locally
+npm run simulate:action
+```
 
-# Run the GitHub Action simulation locally
-npm run simulate-github-action
+### Troubleshooting Database Issues
+
+For database issues, you can use Prisma's tools:
+
+```bash
+# Check database connection
+npx prisma validate
+
+# Reset development database (CAREFUL: deletes all data)
+npx prisma migrate reset
+
+# Check database schema status
+npx prisma db pull
+
+# Generate prisma client after schema changes
+npx prisma generate
 ```
 
 ---

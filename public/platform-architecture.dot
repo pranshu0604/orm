@@ -1,0 +1,95 @@
+digraph G {
+    rankdir=TB;
+    node [shape=box, style="filled", fillcolor="#f0f0f0", fontname="Arial", fontsize=12];
+    edge [fontname="Arial", fontsize=10];
+    
+    subgraph cluster_frontend {
+        label="Frontend";
+        style=filled;
+        color="#e6f3ff";
+        fontname="Arial";
+        
+        UI [label="Next.js UI\nComponents"];
+        ServerActions [label="Server Actions"];
+        ClientComponents [label="Client Components"];
+        
+        UI -> ServerActions [dir=both];
+        UI -> ClientComponents;
+    }
+    
+    subgraph cluster_auth {
+        label="Authentication";
+        style=filled;
+        color="#ffebcc";
+        fontname="Arial";
+        
+        Clerk [label="Clerk\nAuthentication"];
+        NextAuth [label="NextAuth\nPlatform OAuth"];
+        
+        Clerk -> NextAuth [label="User Identity"];
+    }
+    
+    subgraph cluster_data {
+        label="Data Layer";
+        style=filled;
+        color="#e6ffe6";
+        fontname="Arial";
+        
+        Prisma [label="Prisma ORM"];
+        Database [label="PostgreSQL\nDatabase"];
+        Redis [label="Upstash Redis\nCache"];
+        
+        Prisma -> Database;
+    }
+    
+    subgraph cluster_scrapers {
+        label="Data Collection";
+        style=filled;
+        color="#ffe6e6";
+        fontname="Arial";
+        
+        NitterScraper [label="Nitter Scraper"];
+        TwitterAPI [label="Twitter/X API"];
+        GithubAPI [label="GitHub API"];
+    }
+    
+    subgraph cluster_ai {
+        label="AI Processing";
+        style=filled;
+        color="#e6e6ff";
+        fontname="Arial";
+        
+        OpenRouter [label="OpenRouter\nAI Gateway"];
+        LLMs [label="Large Language\nModels"];
+        
+        OpenRouter -> LLMs;
+    }
+    
+    // External connections
+    User [shape=circle, label="User"];
+    
+    PlatformAPIs [shape=cloud, label="Platform APIs", fillcolor="#f9f9f9"];
+    
+    // Main connections
+    User -> UI;
+    User -> Clerk;
+    
+    ServerActions -> Prisma;
+    ServerActions -> NitterScraper;
+    ServerActions -> TwitterAPI;
+    ServerActions -> GithubAPI;
+    ServerActions -> OpenRouter;
+    
+    NitterScraper -> Redis;
+    
+    Clerk -> Prisma [label="User Sync"];
+    NextAuth -> Prisma [label="Store Tokens"];
+    
+    TwitterAPI -> PlatformAPIs;
+    GithubAPI -> PlatformAPIs;
+    
+    // GitHub Actions
+    GithubActions [shape=cog, label="GitHub Actions"];
+    GithubActions -> NitterScraper [label="Update Instances"];
+    NitterScraper -> Redis [label="Cache Results"];
+}
