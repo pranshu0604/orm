@@ -317,85 +317,10 @@ Be concise, helpful, and professional.`;
 }
 ```
 
-## Example Prompts
-
-### Sentiment Analysis
-
-```
-User: Analyze the sentiment of this tweet: "I'm really disappointed with the latest update to your app. It's slow and crashes constantly."
-
-AI: This tweet has a negative sentiment. The user is expressing disappointment with your app update, specifically highlighting performance issues (slowness and crashing). This type of feedback indicates a potentially damaging post to your online reputation that should be addressed promptly.
-
-I recommend:
-1. Responding to the user acknowledging their concerns
-2. Explaining steps you're taking to fix the issues
-3. Offering to work with them directly to troubleshoot their specific problems
-
-This personal approach can turn a negative interaction into a positive demonstration of your customer service.
-```
-
-### Performance Report Generation
-
-```
-User: Generate a performance report for my Twitter account based on these metrics: 
-- 25 tweets this month
-- Average likes: 15
-- Average retweets: 5
-- Profile visits: 300
-- Follower growth: +20
-
-AI: # Twitter Performance Report
-
-## Overview
-Your Twitter account shows moderate engagement with positive growth indicators:
-
-- **Activity Level**: 25 tweets (approximately 0.8 per day)
-- **Engagement**: 15 likes and 5 retweets per post (average)
-- **Discovery**: 300 profile visits
-- **Growth**: 20 new followers
-
-## Performance Analysis
-Your account is performing at a **satisfactory** level with room for improvement. The follower-to-engagement ratio suggests your audience is moderately engaged with your content.
-
-## Recommendations
-1. **Post Consistency**: Maintain regular posting schedule
-2. **Content Optimization**: Experiment with media-rich tweets to increase engagement
-3. **Audience Development**: Engage with relevant conversations in your niche
-4. **Analytics**: Track which tweet formats generate highest engagement
-
-Applying these strategies could help increase your engagement metrics by 15-20% over the next reporting period.
-```
-
-### Content Improvement Suggestions
-
-```
-User: How can I improve this LinkedIn post?
-"Just released our new product. Check it out at example.com"
-
-AI: Your LinkedIn post is quite minimal and doesn't create sufficient interest or engagement. Here's an improved version:
-
-"🚀 **Exciting Announcement**: After months of development, we've just launched [Product Name] - designed to [specific benefit for users].
-
-✅ [Key feature 1]
-✅ [Key feature 2] 
-✅ [Key feature 3]
-
-Early users are already seeing [specific results]. Learn more and start your free trial at example.com
-
-#RelevantHashtag #IndustryHashtag"
-
-This improvement:
-1. Uses emojis for visual appeal
-2. Creates excitement with descriptive language
-3. Highlights specific benefits and features
-4. Adds social proof
-5. Includes a clear call-to-action
-6. Incorporates relevant hashtags for discoverability
-```
 
 ## Best Practices
 
-1. **Provide Clear Context**: Include specific metrics, content examples, and goals in your prompts
+1. **Provide Clear Context**: Include specific metrics, content examples, and goals in the system prompts
 
 2. **Use Consistent Framing**: For recurring analyses, use the same prompt structure to ensure comparable results
 
