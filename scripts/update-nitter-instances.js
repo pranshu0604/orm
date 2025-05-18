@@ -163,6 +163,9 @@ async function main() {
     timeout: 60000 // 60 seconds browser launch timeout
   });
   
+  let success = false;
+  let error = null;
+  
   try {
     // Find a working Nitter instance
     const workingInstance = await getWorkingNitter(browser);
@@ -176,14 +179,19 @@ async function main() {
     const cachedInstance = await redis.get(CACHE_KEY);
     console.log(`Verified cache contains: ${cachedInstance}`);
     
-    // Clear timeout on success
+
     clearTimeout(mainTimeout);
-  } catch (error) {
-    console.error("Error updating Nitter instances:", error);
-    process.exit(1);
+    success = true;
+  } catch (err) {
+    error = err;        // not currently used
+    console.error("Error updating Nitter instances:", err);
   } finally {
     await browser.close();
     console.log("Browser closed");
+    
+    if (!success) {
+      process.exit(1);
+    }
   }
 }
 
