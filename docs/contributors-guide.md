@@ -58,41 +58,6 @@ Examples:
 
 1. Create a feature branch from `develop`
 2. Implement your changes
-3. Update documentation as needed
-4. Submit a PR to `develop`
-5. Request review from maintainers
-
-## Core Components
-
-### Authentication System
-
-The authentication system uses:
-- **Clerk** for primary user authentication
-- **NextAuth** for platform OAuth connections
-
-### Database Schema
-
-The current schema includes:
-- `User` - Core user profile information
-- `PlatformConnection` - OAuth connections to social platforms
-
-### Nitter Scraper
-
-The Twitter/X data access component currently in development:
-- Uses Redis to cache working Nitter instances
-- Implements fallback mechanisms for reliability
-
-## Getting Help
-
-- Create an issue in the project repository
-- Check the [FAQ](./faq.md) for common questions
-
----
-
-Last updated: May 19, 2025
-
-1. Create a feature branch from `develop`
-2. Implement your changes
 3. Write or update tests
 4. Update documentation
 5. Submit a PR to `develop`
@@ -119,6 +84,26 @@ When adding new features, please update the relevant documentation:
 - Add to relevant section in `docs/README.md`
 - Update technical details in `docs/technical-details.md`
 - Add API documentation if adding new endpoints
+
+## Core Components
+
+### Authentication System
+
+The authentication system uses:
+- **Clerk** for primary user authentication
+- **NextAuth** for platform OAuth connections
+
+### Database Schema
+
+The current schema includes:
+- `User` - Core user profile information
+- `PlatformConnection` - OAuth connections to social platforms
+
+### Nitter Scraper
+
+The Twitter/X data access component currently in development:
+- Uses Redis to cache working Nitter instances
+- Implements fallback mechanisms for reliability
 
 ## Core Concepts
 
@@ -217,3 +202,7 @@ To add a new AI analysis type:
 - Create an issue in the project repository
 - Reach out to maintainers via the project Discord
 - Check the [FAQ](./faq.md) for common questions
+
+---
+
+Last updated: May 19, 2025

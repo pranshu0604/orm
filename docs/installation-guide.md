@@ -145,83 +145,6 @@ To verify your setup is working:
 2. Connect your GitHub or Twitter account from the settings page
 3. Check that platform connections are stored in the database
 
----
-
-Last updated: May 19, 2025
-NEXTAUTH_SECRET=$(openssl rand -base64 32)
-
-# Platform API Keys
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-TWITTER_API_KEY=your_twitter_api_key
-TWITTER_API_SECRET=your_twitter_api_secret
-
-# AI Integration
-OPENROUTER_API_KEY=your_openrouter_api_key
-
-# Caching
-UPSTASH_REDIS_REST_URL=your_upstash_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
-
-# Security
-ENCRYPTION_SECRET_KEY=$(openssl rand -base64 32)
-```
-
-### 4. Set Up Database
-
-Create a PostgreSQL database and run migrations:
-
-```bash
-npx prisma generate
-npx prisma migrate dev
-```
-
-### 5. Set Up Redis
-
-Create an Upstash Redis database at [console.upstash.com](https://console.upstash.com) and add the REST URL and token to your environment variables.
-
-Verify the connection:
-
-```bash
-npm run check-redis
-```
-
-### 6. Configure Authentication Providers
-
-#### Clerk Setup
-
-1. Create an application at [dashboard.clerk.dev](https://dashboard.clerk.dev)
-2. Enable Email/Password and/or Social login providers (Google, Apple)
-3. Configure your application URL and allowed redirect URLs
-4. Set up a webhook to keep user data in sync with your database:
-   - Endpoint: `https://your-domain.com/api/sync-user`
-   - Events: `user.created`, `user.updated`, `user.deleted`
-
-#### Platform OAuth Setup
-
-1. **GitHub OAuth App**:
-   - Navigate to [GitHub Developer Settings](https://github.com/settings/developers)
-   - Create a new OAuth App
-   - Set Homepage URL to your site URL
-   - Set Authorization callback URL to `https://your-domain.com/api/auth/callback/github`
-   - Copy Client ID and Client Secret to your environment variables
-
-2. **Twitter OAuth App**:
-   - Navigate to [Twitter Developer Portal](https://developer.twitter.com)
-   - Create a new Project and App
-   - Enable OAuth 2.0
-   - Add `https://your-domain.com/api/auth/callback/twitter` as a callback URL
-   - Set App permissions to Read
-   - Copy API Key and Secret to your environment variables
-
-### 7. Start Development Server
-
-```bash
-npm run dev
-```
-
-Access the application at http://localhost:3000
-
 ## Production Deployment
 
 ### Vercel Deployment (Recommended)
@@ -280,3 +203,7 @@ npm run test:production
 3. Ensure all required environment variables are set
 
 For more detailed troubleshooting, see the [FAQ document](./faq.md).
+
+---
+
+Last updated: May 19, 2025

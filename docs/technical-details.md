@@ -52,6 +52,12 @@ export const config = {
 };
 ```
 
+Clerk handles the main user authentication:
+
+- Handles user registration, login, and profile management
+- Provides secure session management
+- Syncs user data to the application database
+
 ### Platform OAuth (NextAuth)
 
 ```typescript
@@ -92,6 +98,30 @@ export const authOptions: AuthOptions = {
 
 export const handlers = NextAuth(authOptions);
 export { handlers as GET, handlers as POST };
+```
+
+NextAuth is used specifically for platform connections:
+
+- Manages OAuth flows with Twitter/X and GitHub
+- Securely handles and stores access tokens
+- Integrates with the primary user system
+
+### Authentication Flow
+
+```
+┌───────────┐         ┌───────────┐         ┌───────────┐
+│           │         │           │         │           │
+│   User    │────────▶│   Clerk   │────────▶│ Database  │
+│           │         │           │         │           │
+└───────────┘         └───────────┘         └───────────┘
+                                                  │
+                                                  │
+                                                  ▼
+┌───────────┐         ┌───────────┐         ┌───────────┐
+│           │         │           │         │           │
+│ Platform  │◀────────│ NextAuth  │◀────────│   PRAN    │
+│           │         │           │         │   App     │
+└───────────┘         └───────────┘         └───────────┘
 ```
 
 ### User Synchronization
@@ -321,20 +351,6 @@ export async function getWorkingNitter(): Promise<string | null> {
 ---
 
 Last updated: May 19, 2025
-
-The project uses a dual authentication approach:
-
-1. **Clerk** for primary user authentication:
-   - Handles user registration, login, and profile management
-   - Provides secure session management
-   - Syncs user data to the application database
-
-2. **NextAuth** for platform connections:
-   - Manages OAuth flows with Twitter/X and GitHub
-   - Securely handles and stores access tokens
-   - Integrates with the primary user system
-
-### Authentication Flow
 
 ```
 ┌───────────┐         ┌───────────┐         ┌───────────┐

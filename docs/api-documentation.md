@@ -79,9 +79,11 @@ This is a catch-all route that handles NextAuth operations, including sign-in an
 
 1. **GitHub Provider**
    - Scopes: `read:user`, `user:email`
+   - Profile data accessed: user profile, email, repositories
 
 2. **Twitter/X Provider**
    - Scopes: `users.read`, `tweet.read`, `offline.access`
+   - Profile data accessed: user profile, tweets, metrics
 
 **Implementation:**
 
@@ -106,60 +108,6 @@ export const authOptions: AuthOptions = {
   // Additional configuration...
 };
 ```
-
-## Error Handling
-
-All API endpoints follow a consistent error format:
-
-```json
-{
-  "error": "Error message here"
-}
-```
-
----
-
-Last updated: May 19, 2025
-
-**Usage Example:**
-
-```javascript
-const response = await fetch('/api/sync-user', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    userId: 'user_2KGLCbvZrCYgBhXd9dYyMbEvfxl',
-  }),
-});
-
-const data = await response.json();
-```
-
-### NextAuth Authentication
-
-Handles platform-specific OAuth authentication flows.
-
-#### `GET|POST /api/auth/[...nextauth]`
-
-This is a catch-all route that handles all NextAuth operations, including:
-- Sign in
-- Callback processing
-- Session management
-- Token handling
-
-NextAuth handles the OAuth flow automatically, so you generally don't need to interact with these endpoints directly.
-
-**Platform Providers:**
-
-1. **GitHub Provider**
-   - Scopes: `read:user`, `user:email`
-   - Profile data accessed: user profile, email, repositories
-
-2. **Twitter/X Provider**
-   - Scopes: `users.read`, `tweet.read`, `offline.access`
-   - Profile data accessed: user profile, tweets, metrics
 
 **Usage Example (Client-Side):**
 
@@ -272,3 +220,7 @@ The current API version is unversioned. Future releases will implement versionin
 All API responses are in JSON format with UTF-8 encoding.
 
 Dates follow the ISO 8601 format: `YYYY-MM-DDTHH:MM:SSZ`
+
+---
+
+Last updated: May 19, 2025

@@ -94,11 +94,6 @@ export async function getStreamingAiCompletion(userPrompt: string): Promise<Read
 
 Future development will focus on creating specialized AI functions for reputation analysis, sentiment analysis, and content suggestions.
 
----
-
-Last updated: May 19, 2025
-
-
 ## Working with the AI System
 
 The AI system is designed to work automatically. Developers should:
@@ -108,18 +103,6 @@ The AI system is designed to work automatically. Developers should:
 3. Handle and display the structured results
 
 The system does not require users to manually craft prompts - the UI buttons and automated analysis pipeline will handle all interactions with the AI service.
-
-## Future Enhancements
-
-In upcoming releases, we plan to enhance AI integration with:
-
-1. Direct API connections to social platforms for real-time analysis
-2. Custom-trained models specific to reputation management
-3. Scheduled automated reports and alerts
-4. Visual content analysis capabilities
-5. Competitive analysis features
-
----
 
 ## Best Practices
 

@@ -70,19 +70,15 @@ export function decryptToken(encryptedToken: string): string {
 
 Additional platform integrations and more complete data collection features are planned for future development.
 
----
+## Platform Integration Details
 
-Last updated: May 19, 2025
-
-## GitHub Integration
-
-### Setup and Authentication
+### GitHub Integration
 
 GitHub integration uses OAuth via NextAuth with the following scopes:
 - `read:user` - Access user profile information
 - `user:email` - Access user email addresses
 
-### Data Collection
+#### Data Collection
 
 With GitHub integration, PRAN collects:
 
@@ -176,7 +172,50 @@ export async function analyzeGitHubProfile(userId: string) {
 }
 ```
 
-### Recommended UI Implementation
+### Example Usage
+
+#### Analyzing GitHub Presence
+
+```typescript
+import { analyzeContent } from "@/app/actions/ai";
+
+export async function analyzeGitHubProfile(userId: string) {
+  // Fetch user data and repositories
+  const userData = await fetchGitHubUserData(userId);
+  const repositories = await fetchGitHubRepositories(userId);
+  
+  if (!userData || !repositories) return null;
+  
+  // Extract relevant information for analysis
+  const contentToAnalyze = {
+    profile: {
+      bio: userData.bio,
+      name: userData.name,
+      company: userData.company,
+      location: userData.location,
+      blog: userData.blog,
+    },
+    repositories: repositories.map(repo => ({
+      name: repo.name,
+      description: repo.description,
+      stars: repo.stargazers_count,
+      forks: repo.forks_count,
+      language: repo.language,
+    })),
+  };
+  
+  // Use AI to analyze GitHub presence
+  const analysis = await analyzeContent(
+    JSON.stringify(contentToAnalyze),
+    userId,
+    "github_presence"
+  );
+  
+  return analysis;
+}
+```
+
+#### Recommended UI Implementation
 
 ```jsx
 // In a React component
@@ -222,18 +261,18 @@ function GitHubProfileInsights({ userId }) {
 }
 ```
 
-## LinkedIn Integration Example
+### LinkedIn Integration (Planned)
 
 > Note: This is an example implementation for a future platform integration.
 
-### Setup and Authentication
+#### Setup and Authentication
 
 LinkedIn integration would use OAuth via NextAuth with the following scopes:
 - `r_liteprofile` - Access basic profile information
 - `r_emailaddress` - Access user email address
 - `w_member_social` - Manage posts and comments
 
-### NextAuth Configuration
+#### NextAuth Configuration
 
 ```typescript
 // Add to app/api/auth/[...nextauth]/route.ts
@@ -322,17 +361,17 @@ case "linkedin_presence":
   break;
 ```
 
-## Instagram Integration Example
+### Instagram Integration (Planned)
 
 > Note: This is an example implementation for a future platform integration.
 
-### Setup and Authentication
+#### Setup and Authentication
 
 Instagram integration would use OAuth via NextAuth with the following scopes:
 - `user_profile` - Access to basic profile information
 - `user_media` - Access to user's media content
 
-### NextAuth Configuration
+#### NextAuth Configuration
 
 ```typescript
 // Add to app/api/auth/[...nextauth]/route.ts
@@ -407,7 +446,9 @@ case "instagram_presence":
   break;
 ```
 
-## Integration Architecture
+## Implementation Guidelines
+
+### Integration Architecture
 
 When integrating a new platform, follow these steps:
 
@@ -447,3 +488,7 @@ describe('GitHub Integration', () => {
   });
 });
 ```
+
+---
+
+Last updated: May 19, 2025

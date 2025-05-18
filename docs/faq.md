@@ -54,17 +54,28 @@ Essential environment variables include:
 
 PRAN uses a dual authentication system:
 
-1. **Clerk**: For primary user authentication (sign-up, login)
+1. **Clerk**: For primary user authentication (sign-up, login, user management)
 2. **NextAuth**: For connecting to social platforms via OAuth
 
-This separation allows users to maintain a single account while connecting to multiple platforms.
+This separation allows users to maintain a single account while connecting to multiple platforms and lets us use specialized tools for each purpose.
 
 ### How are platform tokens stored?
 
 OAuth tokens for connected platforms are:
-1. Encrypted using crypto-js
+1. Encrypted using AES encryption before storage
 2. Stored in the database
 3. Decrypted only when needed for API requests
+4. Never exposed in client-side code
+5. Stored with limited scopes to reduce risk
+6. Refreshed automatically when possible
+
+### How do user accounts connect to platform accounts?
+
+1. Users first sign up using Clerk
+2. The Clerk user is synced to our database via API
+3. Users can then connect platforms using NextAuth OAuth flows
+4. When a platform is connected, tokens are encrypted and stored in the database
+5. The application can then access the platform APIs using these tokens
 
 ## Redis Usage
 
@@ -81,14 +92,6 @@ Run the Redis connectivity check script:
 npm run check-redis
 ```
 
----
-
-Last updated: May 19, 2025
-- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: GitHub OAuth credentials
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Redis connection
-- `OPENROUTER_API_KEY`: OpenRouter API access
-- `ENCRYPTION_SECRET_KEY`: Used for encrypting OAuth tokens
-
 ### How do I work with the database?
 
 PRAN uses Prisma ORM:
@@ -96,32 +99,6 @@ PRAN uses Prisma ORM:
 - Run migrations with `npx prisma migrate dev`
 - Reset development database with `npx prisma migrate reset`
 - Open Prisma Studio with `npx prisma studio`
-
-## Authentication
-
-### Why does PRAN use two different authentication systems?
-
-PRAN uses a dual authentication approach:
-1. **Clerk**: For primary user authentication (signup, login, user management)
-2. **NextAuth**: For connecting to third-party platforms via OAuth
-
-This separation allows us to use specialized tools for each purpose while maintaining a cohesive user experience.
-
-### How do user accounts connect to platform accounts?
-
-1. Users first sign up using Clerk
-2. The Clerk user is synced to our database via API
-3. Users can then connect platforms using NextAuth OAuth flows
-4. When a platform is connected, tokens are encrypted and stored in the database
-5. The application can then access the platform APIs using these tokens
-
-### How are OAuth tokens secured?
-
-OAuth tokens are:
-1. Encrypted using AES encryption before storage
-2. Never exposed in client-side code
-3. Stored with limited scopes to reduce risk
-4. Refreshed automatically when possible
 
 ## Data Collection
 

@@ -59,6 +59,8 @@ PRAN is currently in early development with a focus on establishing the core arc
 - Add LinkedIn OAuth integration
 - Implement Facebook connection (pending API limitations)
 - Explore integration with Mastodon and other platforms
+- Mastodon/Fediverse integration
+- Custom website monitoring
 
 ### Advanced Analytics
 
@@ -66,6 +68,10 @@ PRAN is currently in early development with a focus on establishing the core arc
 - Create engagement pattern recognition
 - Implement content topic classification
 - Add advanced visualization components
+- Historical trend analysis
+- Audience demographics
+- Engagement optimization
+- Competitor benchmarking
 
 ### Mobile Support
 
@@ -73,27 +79,12 @@ PRAN is currently in early development with a focus on establishing the core arc
 - Add mobile notifications for reputation alerts
 - Create responsive dashboard layouts
 
----
-
-*Note: This roadmap represents current plans and may be adjusted based on development progress and user feedback.*
-
-Last updated: May 19, 2025
-- Mastodon/Fediverse integration
-- Custom website monitoring
-
 ### Advanced AI Features
 
 - Content improvement recommendations
 - Cross-platform correlation analysis
 - Reputation risk detection
 - Automated content scheduling
-
-### Enhanced Analytics
-
-- Historical trend analysis
-- Audience demographics
-- Engagement optimization
-- Competitor benchmarking
 
 ### Enterprise Features
 
@@ -125,4 +116,6 @@ See the [Contributor's Guide](./contributors-guide.md) for more information on h
 
 ---
 
-**Note**: This roadmap is subject to change as the project evolves. Regular updates will be made to reflect current status and priorities.
+**Note**: This roadmap is subject to change as the project evolves. Regular updates will be made to reflect current status and priorities based on development progress and user feedback.
+
+Last updated: May 19, 2025

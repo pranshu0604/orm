@@ -1,3 +1,4 @@
+<!-- filepath: /Users/pranshupandey/Developer/Personal/orm/docs/README.md -->
 # PRAN - Public Reputation and Analysis Node Documentation
 
 This documentation provides information about the PRAN project, focusing on implemented features and current architecture.
@@ -8,8 +9,13 @@ This documentation provides information about the PRAN project, focusing on impl
 2. [Architecture and Components](#architecture-and-components) 
 3. [Authentication System](#authentication-system)
 4. [Platform Connections](#platform-connections)
-5. [Setup and Installation](#setup-and-installation)
-6. [Troubleshooting](#troubleshooting)
+5. [Data Analysis & AI Features](#data-analysis--ai-features)
+6. [Twitter/X Data Scraping](#twitterx-data-scraping)
+7. [Setup and Installation](#setup-and-installation)
+8. [Deployment Checklist](#deployment-checklist) 
+9. [How It Works](#how-it-works)
+10. [Maintenance](#maintenance)
+11. [Troubleshooting](#troubleshooting)
 
 ## Project Overview
 
@@ -55,87 +61,6 @@ scripts/          # Utility scripts
 
 PRAN uses a dual authentication approach:
 
-1. **Clerk** - Primary user authentication
-   - User registration and login
-   - Profile management
-   - JWT-based authentication
-
-2. **NextAuth** - Platform connections
-   - OAuth integration with social platforms
-   - Secure token management
-   - Session handling
-
-### Key Implementation Details
-
-- User data synchronized between Clerk and database
-- OAuth tokens stored encrypted in the database
-- Platform connections managed in user settings
-
-## Platform Connections
-
-Currently implemented platform integrations:
-
-1. **Twitter/X Integration**
-   - OAuth authentication via NextAuth
-   - Scopes: `users.read`, `tweet.read`, `offline.access`
-   - Data access via Nitter (in development)
-
-2. **GitHub Integration**
-   - OAuth authentication via NextAuth
-   - Scopes: `read:user`, `user:email`
-
-## Setup and Installation
-
-For detailed setup instructions, refer to the [Installation Guide](./installation-guide.md).
-
-### Required Environment Variables
-
-```
-# Database
-DATABASE_URL=
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-
-# NextAuth
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
-
-# Twitter/X
-TWITTER_API_KEY=
-TWITTER_API_SECRET=
-
-# GitHub
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-
-# Redis
-UPSTASH_REDIS_REST_URL=
-UPSTASH_REDIS_REST_TOKEN=
-
-# AI
-OPENROUTER_API_KEY=
-```
-
-## Troubleshooting
-
-For common issues and solutions, refer to the [FAQ](./faq.md).
-
----
-
-Last updated: May 19, 2025
-   - Metrics tracking and storage
-
-4. **Reporting System**:
-   - Performance reports generation
-   - Trend analysis and visualization
-   - Suggestions for improvement
-
-## Authentication System
-
-PRAN uses a dual authentication approach:
-
 ### Primary Authentication (Clerk)
 
 Clerk handles the main user authentication:
@@ -162,6 +87,12 @@ When a user connects a platform:
 2. Upon successful authentication, tokens are encrypted and stored
 3. The connection is recorded in the database with the user's ID
 
+### Key Implementation Details
+
+- User data synchronized between Clerk and database
+- OAuth tokens stored encrypted in the database
+- Platform connections managed in user settings
+
 ## Platform Connections
 
 PRAN supports connecting to multiple platforms:
@@ -171,6 +102,7 @@ PRAN supports connecting to multiple platforms:
 - Connect via OAuth 2.0
 - Scope includes: `users.read`, `tweet.read`, `offline.access`
 - Data collected: user profile, tweets, engagement metrics
+- Data access via Nitter (in development)
 
 ### GitHub Integration
 
@@ -297,46 +229,54 @@ The system implements a hybrid approach to finding and using working Nitter inst
    - Detailed logging for debugging issues
    - Graceful degradation if any component fails
 
-## Setup Instructions
+## Setup and Installation
 
-### 1. Environment Variables
+For detailed setup instructions, refer to the [Installation Guide](./installation-guide.md).
 
-Add the following environment variables to your project:
+### Required Environment Variables
 
 ```
 # Database
-DATABASE_URL="your_postgresql_connection_string"
+DATABASE_URL=
 
-# Authentication - Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
 
-# Authentication - NextAuth
-NEXTAUTH_URL=your_site_url
-NEXTAUTH_SECRET=your_nextauth_secret
+# NextAuth
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
 
-# Platform API Keys
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-TWITTER_API_KEY=your_twitter_api_key
-TWITTER_API_SECRET=your_twitter_api_secret
+# Twitter/X
+TWITTER_API_KEY=
+TWITTER_API_SECRET=
 
-# AI Integration
-OPENROUTER_API_KEY=your_openrouter_api_key
+# GitHub
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 
-# Caching
-UPSTASH_REDIS_REST_URL=your_upstash_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+# Redis
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# AI
+OPENROUTER_API_KEY=
 
 # Security
-ENCRYPTION_SECRET_KEY=your_encryption_secret
+ENCRYPTION_SECRET_KEY=
 ```
+
+### Setup Instructions
+
+#### 1. Environment Variables
+
+Add the environment variables to your project as listed above.
 
 For local development, add these to your `.env.local` file.
 
 For production, add these as secrets in your repository settings and in your Vercel project settings.
 
-### 2. Database Setup
+#### 2. Database Setup
 
 1. Create a PostgreSQL database (Neon recommended)
 2. Initialize the database with Prisma:
@@ -345,7 +285,7 @@ For production, add these as secrets in your repository settings and in your Ver
 npx prisma migrate dev
 ```
 
-### 3. Redis Setup
+#### 3. Redis Setup
 
 1. Create an Upstash Redis database
 2. Add the connection details to your environment variables
@@ -354,7 +294,7 @@ npx prisma migrate dev
    npm run check-redis
    ```
 
-### 4. Authentication Setup
+#### 4. Authentication Setup
 
 1. **Clerk Setup**:
    - Create a Clerk application at [clerk.com](https://clerk.com)
@@ -369,7 +309,7 @@ npx prisma migrate dev
    - Configure callback URLs for each provider
    - Add API keys to environment variables
 
-### 5. GitHub Actions Setup
+#### 5. GitHub Actions Setup
 
 The GitHub Action is configured to run every 6 hours to update the Redis cache with working Nitter instances.
 
@@ -377,7 +317,7 @@ Make sure you have added all the required environment variables as GitHub secret
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
-### 6. Development Environment
+#### 6. Development Environment
 
 Install dependencies and start the development server:
 
@@ -386,7 +326,7 @@ npm install
 npm run dev
 ```
 
-### 7. Verify Your Setup
+#### 7. Verify Your Setup
 
 To verify that everything is working:
 
@@ -549,6 +489,8 @@ To verify that everything is working:
    - Monitor performance and cost changes
 
 ## Troubleshooting
+
+For common issues and solutions, refer to the [FAQ](./faq.md).
 
 ### Common Issues
 
