@@ -70,6 +70,10 @@ export function decryptToken(encryptedToken: string): string {
 
 Additional platform integrations and more complete data collection features are planned for future development.
 
+---
+
+Last updated: May 19, 2025
+
 ## GitHub Integration
 
 ### Setup and Authentication

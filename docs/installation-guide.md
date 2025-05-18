@@ -147,7 +147,7 @@ To verify your setup is working:
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
 
 # Platform API Keys

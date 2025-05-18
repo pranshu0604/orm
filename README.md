@@ -59,13 +59,11 @@ For detailed setup instructions, see the [Installation Guide](./docs/installatio
 
 ## Documentation
 
----
-
-Last updated: May 18, 2025
+Last updated: May 19, 2025
 - [Installation Guide](./docs/installation-guide.md) - Setup instructions for development
-- [Technical Implementation Details](./docs/technical-details.md) - Technical information for developers
+- [Technical Implementation Details](./docs/technical-details.md) - Technical implementation information
 - [API Documentation](./docs/api-documentation.md) - Reference for current API endpoints
 - [Platform Integration Examples](./docs/platform-integration-examples.md) - Examples for platform integrations
 - [Contributor's Guide](./docs/contributors-guide.md) - Guidelines for contributing to the project
-- [AI Integration](./docs/ai-integration.md) - Documentation for planned AI features
+- [AI Integration](./docs/ai-integration.md) - Documentation for AI integration test
 - [FAQ](./docs/faq.md) - Frequently asked questions about the project

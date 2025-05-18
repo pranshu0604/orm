@@ -77,8 +77,7 @@ PRAN is currently in early development with a focus on establishing the core arc
 
 *Note: This roadmap represents current plans and may be adjusted based on development progress and user feedback.*
 
-Last updated: May 18, 2025
-- Instagram integration
+Last updated: May 19, 2025
 - Mastodon/Fediverse integration
 - Custom website monitoring
 

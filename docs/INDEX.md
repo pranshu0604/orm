@@ -11,7 +11,7 @@ This folder contains documentation for the PRAN (Public Reputation and Analysis 
 ## Core Documentation
 
 - [**Main Documentation**](./README.md) - Overview of the PRAN project architecture
-- [**Technical Details**](./technical-details.md) - Technical implementation details
+- [**Technical Implementation Details**](./technical-details.md) - Technical implementation details
 - [**API Documentation**](./api-documentation.md) - Reference for existing API endpoints
 - [**Platform Integration Examples**](./platform-integration-examples.md) - Examples for platform integrations
 - [**FAQ**](./faq.md) - Frequently asked questions
@@ -28,4 +28,4 @@ This folder contains documentation for the PRAN (Public Reputation and Analysis 
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025

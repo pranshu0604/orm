@@ -320,7 +320,7 @@ export async function getWorkingNitter(): Promise<string | null> {
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025
 
 The project uses a dual authentication approach:
 
@@ -902,4 +902,4 @@ Potential improvements for future versions:
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025

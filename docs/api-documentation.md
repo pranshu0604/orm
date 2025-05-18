@@ -119,7 +119,7 @@ All API endpoints follow a consistent error format:
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025
 
 **Usage Example:**
 

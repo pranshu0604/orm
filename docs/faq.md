@@ -83,7 +83,7 @@ npm run check-redis
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025
 - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: GitHub OAuth credentials
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Redis connection
 - `OPENROUTER_API_KEY`: OpenRouter API access
@@ -270,6 +270,6 @@ Planned enhancements include:
 
 ---
 
-Last updated: May 18, 2025
+Last updated: May 19, 2025
 
 If you have a question not covered here, please open an issue on the GitHub repository.
