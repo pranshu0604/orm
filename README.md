@@ -59,17 +59,6 @@ For detailed setup instructions, see the [Installation Guide](./docs/installatio
 
 ## Documentation
 
-- [Technical Details](./docs/technical-details.md) - Implementation details
-- [API Documentation](./docs/api-documentation.md) - API endpoints reference
-- [Development Roadmap](./docs/roadmap.md) - Current status and future plans
-- [Platform Integrations](./docs/platform-integration-examples.md) - OAuth integration examples
-- [AI Integration](./docs/ai-integration.md) - AI test implementation
-- [FAQ](./docs/faq.md) - Frequently asked questions
-
-## License
-
-MIT
-
 ---
 
 Last updated: May 18, 2025
