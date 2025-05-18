@@ -1,53 +1,93 @@
 # Scripts Directory
 
-> **Note**: These scripts support functionality that is still under development. Some features may not be fully implemented yet.
+This directory contains utility scripts for managing the PRAN application, with a focus on the Nitter scraper and Redis connectivity testing.
 
-This directory contains utility scripts for managing the PRAN application and its components.
+## Available Scripts
 
-## Development Status
+### Redis Management Scripts
+
+- **`check-redis-combined.js`**: Tests Redis connectivity and cached Nitter instances.
+  ```bash
+  # Test basic Redis connectivity
+  node check-redis-combined.js
+  
+  # Test cached Nitter instances
+  node check-redis-combined.js nitter
+  ```
+
+### Nitter Scraper Scripts
+
+- **`update-nitter-instances.js`**: Updates the Redis cache with working Nitter instances.
+  ```bash
+  node update-nitter-instances.js
+  ```
+  
+  Required environment variables:
+  - `UPSTASH_REDIS_REST_URL`
+  - `UPSTASH_REDIS_REST_TOKEN`
+  
+  This script:
+  1. Tests multiple Nitter instances for availability
+  2. Stores working instances in Redis cache
+  3. Sets a 1-hour expiration time
+
+- **`test-production-merged.js`**: Tests the Nitter scraper functionality.
+  ```bash
+  # Run detailed test with fallbacks
+  node test-production-merged.js
+  
+  # Run quick test of Redis cache only
+  node test-production-merged.js simple
+  ```
+
+### Development Testing
+
+- **`simulate-github-action.js`**: Simulates the GitHub Action environment locally.
+  ```bash
+  node simulate-github-action.js
+  ```
+  
+  This script:
+  1. Sets up required environment variables
+  2. Runs the Nitter update script
+  3. Logs output similar to what would appear in GitHub Actions
+
+- **`verify-production-setup.js`**: Validates that the production environment is properly configured.
+  ```bash
+  node verify-production-setup.js
+  ```
+  
+  Checks:
+  - Redis connectivity
+  - Database connectivity
+  - Environment variables
+  - API endpoint access
+
+## Script Development Status
 
 | Script | Status |
 |--------|--------|
 | Redis connectivity check | Implemented ✓ |
-| Nitter instance updating | In development |
-| Production testing | In development |
+| Nitter instance updating | Implemented ✓ |
+| Production testing | Implemented ✓ |
+| GitHub Action simulation | Implemented ✓ |
 
-## Nitter Scraper Scripts
+## Usage Notes
 
-- **`update-nitter-instances.js`**: Updates the Redis cache with working Nitter instances.
-  - Primarily run by GitHub Actions on a schedule
-  - Can be run manually for immediate updates
-  - Requires Redis credentials in environment variables
+1. These scripts work best when run from the project root:
+   ```bash
+   npm run check-redis
+   # or
+   node scripts/check-redis-combined.js
+   ```
+   
+2. All scripts respect the environment variables in `.env.local` when run locally.
 
-- **`check-redis-combined.js`**: Unified script for checking Redis configuration.
-  - Usage: `node check-redis-combined.js [nitter]`
-  - Without args: Tests basic Redis connectivity
-  - With `nitter` arg: Checks for cached Nitter instances
-  - (Replaces legacy `check-redis.js` and `check-redis-nitter.js`)
+3. Scripts requiring Redis or database access will output clear error messages when credentials are missing or incorrect.
 
-- **`test-production-merged.js`**: Tests if the Nitter scraper works in production mode.
-  - Usage: `node test-production-merged.js [simple]`
-  - Without args: Detailed test with fallbacks
-  - With `simple` arg: Quick test of Redis cache only
-  - (Replaces legacy `test-production.js` and `test-production-simple.js`)
+---
 
-## Database Management
-
-- **`seed-test-data.js`**: Seeds the database with sample data for testing.
-  - Usage: `node seed-test-data.js`
-  - Creates sample users, platform connections, and posts
-  - Safe to run in development, will log conflicts without error
-
-- **`cleanup-old-data.js`**: Maintenance script to remove stale data.
-  - Usage: `node cleanup-old-data.js [--dry-run]`
-  - Removes posts and metrics older than the configured threshold
-  - Use `--dry-run` to see what would be deleted without making changes
-
-## CI/CD Scripts
-
-- **`simulate-github-action.js`**: Simulates the GitHub Action environment locally.
-  - Tests the Nitter update workflow without triggering actual GitHub Actions
-  - Helpful for debugging workflow issues
+Last updated: May 18, 2025
 
 - **`pre-deploy-check.js`**: Runs pre-deployment validation checks.
   - Verifies database connection

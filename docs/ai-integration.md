@@ -1,25 +1,12 @@
 # AI Integration in PRAN
 
-> **Important**: The AI features described in this document are currently under development and not yet fully implemented. This document outlines the planned architecture and functionality.
+This document describes the current AI integration implementation in PRAN.
 
-This document provides examples and guidelines for working with the planned AI integration features in PRAN.
+## Current Implementation
 
-## Overview
+The current implementation is a basic test of OpenRouter connectivity and streaming responses. This is a foundation for future AI features but does not yet include the complete planned functionality.
 
-PRAN plans to use OpenRouter to access various AI models for content analysis and generation. The UI will have dedicated buttons for different analysis types, and the backend will automatically determine and return the appropriate responses.
-
-Key features will include:
-
-1. Automatic post sentiment analysis *(planned)*
-2. One-click performance reports *(planned)*
-3. Integrated content improvement suggestions *(planned)*
-4. Overall reputation analysis dashboard *(planned)*
-
-## Implementation Details
-
-### Current Test Implementation
-
-The current implementation is for testing OpenRouter connectivity and streaming responses:
+### Test Implementation
 
 ```tsx
 // app/ai/page.tsx (test implementation only)
@@ -103,26 +90,13 @@ export async function getStreamingAiCompletion(userPrompt: string): Promise<Read
 }
 ```
 
-### Planned UI Implementation
+## Next Steps
 
-The final implementation will have:
+Future development will focus on creating specialized AI functions for reputation analysis, sentiment analysis, and content suggestions.
 
-1. **Analysis Dashboard**:
-   - Buttons for different analysis types
-   - Automated collection of relevant data
-   - Integrated visualizations of results
+---
 
-2. **Automatic Data Collection**:
-   - System will gather profile data
-   - System will gather recent posts
-   - System will gather engagement metrics
-   - No manual prompt entry required
-
-3. **Backend Analysis Types**:
-   - Content sentiment analysis
-   - Audience engagement patterns
-   - Performance trending
-   - Improvement recommendations
+Last updated: May 18, 2025
 
 
 ## Working with the AI System

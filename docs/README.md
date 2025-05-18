@@ -1,54 +1,130 @@
 # PRAN - Public Reputation and Analysis Node Documentation
 
-> **Important**: PRAN is currently in early development. This documentation describes both the current implementation and planned features. Many sections describe the intended architecture rather than fully implemented functionality.
+This documentation provides information about the PRAN project, focusing on implemented features and current architecture.
 
-## Overview
+## Table of Contents
 
-PRAN is a comprehensive online reputation management platform that helps users monitor, analyze, and improve their presence across multiple digital platforms. The system integrates with social media platforms, analyzes user content, and provides AI-powered insights and recommendations.
+1. [Project Overview](#project-overview)
+2. [Architecture and Components](#architecture-and-components) 
+3. [Authentication System](#authentication-system)
+4. [Platform Connections](#platform-connections)
+5. [Setup and Installation](#setup-and-installation)
+6. [Troubleshooting](#troubleshooting)
 
-## Development Status
+## Project Overview
+
+PRAN (Public Reputation and Analysis Node) is a web application designed to help users monitor and manage their online reputation across multiple digital platforms. 
+
+### Current Implementation Status
 
 | Component | Status |
 |-----------|--------|
-| Core architecture | Initial implementation ✓ |
-| Authentication system | Basic implementation ✓ |
-| Platform connections | Partial implementation ✓ |
-| Data analysis | Planned |
-| AI features | Planned |
-| Twitter/X Nitter scraping | In development |
-4. [Data Analysis & AI Features](#data-analysis--ai-features)
-5. [Twitter/X Data Scraping](#twitter-x-data-scraping)
-6. [Setup Instructions](#setup-instructions)
-7. [Deployment Checklist](#deployment-checklist)
-8. [Maintenance](#maintenance)
-9. [Troubleshooting](#troubleshooting)
+| Core architecture | Basic implementation ✓ |
+| Authentication system | Implemented ✓ |
+| Platform connections (Twitter/X, GitHub) | Implemented ✓ |
+| Twitter/X data scraping via Nitter | In development |
+| Redis caching for Nitter instances | Implemented ✓ |
+| AI integration (test implementation) | Implemented ✓ |
 
-## System Architecture
+## Architecture and Components
 
-PRAN uses a modern web architecture with the following components:
+PRAN is built with:
 
-- **Next.js (App Router)**: Core framework for the frontend and API routes
-- **PostgreSQL Database**: Storage for user data, platform connections, and analytics
-- **Redis Cache**: For performance optimization and storing ephemeral data
-- **AI Integration**: Via OpenRouter API for sentiment analysis and content suggestions
-- **Authentication**: Dual-system approach with Clerk and NextAuth
-- **Background Jobs**: GitHub Actions for scheduled tasks
+- **Next.js 15** with App Router (React 19)
+- **PostgreSQL** with Prisma ORM
+- **Redis** cache via Upstash
+- **OpenRouter** for AI functionality (test implementation)
+- **Dual authentication system** (Clerk + NextAuth)
+- **Tailwind CSS** and shadcn/ui components
 
-### Core Components
+### Directory Structure
 
-1. **User Management**:
-   - User registration and authentication via Clerk
-   - Profile data synchronization between Clerk and database
-   - User settings and preferences
+```
+app/              # Next.js App Router structure
+├── actions/      # Server actions
+├── ai/           # AI testing integration
+├── api/          # API routes
+├── settings/     # Settings pages
+components/       # UI components
+lib/              # Core utilities
+prisma/           # Database schema and migrations
+scripts/          # Utility scripts
+```
 
-2. **Platform Connections**:
-   - Integration with X/Twitter and GitHub via NextAuth
-   - Secure token storage for API access
-   - Connection management UI
+## Authentication System
 
-3. **Content Analysis**:
-   - Post collection from connected platforms
-   - Sentiment analysis using AI models
+PRAN uses a dual authentication approach:
+
+1. **Clerk** - Primary user authentication
+   - User registration and login
+   - Profile management
+   - JWT-based authentication
+
+2. **NextAuth** - Platform connections
+   - OAuth integration with social platforms
+   - Secure token management
+   - Session handling
+
+### Key Implementation Details
+
+- User data synchronized between Clerk and database
+- OAuth tokens stored encrypted in the database
+- Platform connections managed in user settings
+
+## Platform Connections
+
+Currently implemented platform integrations:
+
+1. **Twitter/X Integration**
+   - OAuth authentication via NextAuth
+   - Scopes: `users.read`, `tweet.read`, `offline.access`
+   - Data access via Nitter (in development)
+
+2. **GitHub Integration**
+   - OAuth authentication via NextAuth
+   - Scopes: `read:user`, `user:email`
+
+## Setup and Installation
+
+For detailed setup instructions, refer to the [Installation Guide](./installation-guide.md).
+
+### Required Environment Variables
+
+```
+# Database
+DATABASE_URL=
+
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+
+# NextAuth
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
+
+# Twitter/X
+TWITTER_API_KEY=
+TWITTER_API_SECRET=
+
+# GitHub
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+
+# Redis
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# AI
+OPENROUTER_API_KEY=
+```
+
+## Troubleshooting
+
+For common issues and solutions, refer to the [FAQ](./faq.md).
+
+---
+
+Last updated: May 18, 2025
    - Metrics tracking and storage
 
 4. **Reporting System**:

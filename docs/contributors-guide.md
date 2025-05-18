@@ -1,20 +1,27 @@
 # PRAN Contributor's Guide
 
-> **Note**: This project is in early development. Many features described in the documentation are planned but not yet implemented. This guide will help you understand the current structure and contribute to the ongoing development.
-
 This guide is designed to help developers understand how to contribute to the PRAN (Public Reputation and Analysis Node) project.
 
-## Project Status
+## Project Structure
 
-PRAN is currently in the early development phase. The core architecture and authentication system are being established, with many features still in the planning stages.
+The PRAN project is organized as follows:
 
-Current implementation status:
-- Basic Next.js app structure ✓
-- Authentication framework (Clerk + NextAuth) ✓
-- Database schema design ✓
-- Twitter/X data scraping via Nitter (in progress)
-- Platform integrations (partial implementation)
-- AI features (planned)
+```
+app/              # Next.js App Router structure
+├── actions/      # Server actions
+├── api/          # API routes (auth, sync-user)
+├── hooks/        # React hooks (useSyncClient)
+├── providers/    # Context providers
+└── settings/     # Settings pages
+components/       # UI components (LayoutHeader, ThemeSwitch)
+docs/             # Project documentation
+lib/              # Core utility libraries
+├── scrapers/     # Twitter/Nitter scraping utilities
+prisma/           # Database schema and migrations
+public/           # Static assets and diagrams
+scripts/          # Utility scripts
+utils/            # Helper functions
+```
 
 ## Development Workflow
 
@@ -48,6 +55,41 @@ Examples:
 - `docs(readme): update installation instructions`
 
 ### 4. Pull Request Process
+
+1. Create a feature branch from `develop`
+2. Implement your changes
+3. Update documentation as needed
+4. Submit a PR to `develop`
+5. Request review from maintainers
+
+## Core Components
+
+### Authentication System
+
+The authentication system uses:
+- **Clerk** for primary user authentication
+- **NextAuth** for platform OAuth connections
+
+### Database Schema
+
+The current schema includes:
+- `User` - Core user profile information
+- `PlatformConnection` - OAuth connections to social platforms
+
+### Nitter Scraper
+
+The Twitter/X data access component currently in development:
+- Uses Redis to cache working Nitter instances
+- Implements fallback mechanisms for reliability
+
+## Getting Help
+
+- Create an issue in the project repository
+- Check the [FAQ](./faq.md) for common questions
+
+---
+
+Last updated: May 18, 2025
 
 1. Create a feature branch from `develop`
 2. Implement your changes

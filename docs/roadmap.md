@@ -2,53 +2,82 @@
 
 This document outlines the current development status and future plans for the PRAN (Public Reputation and Analysis Node) project.
 
-## Current Status (May 2023)
+## Current Status (May 2025)
 
 PRAN is currently in early development with a focus on establishing the core architecture and basic functionality.
 
 ### Implemented Features
 
 - ✅ Basic Next.js application structure
-- ✅ Dual authentication system skeleton (Clerk + NextAuth)
-- ✅ Database schema design with Prisma
-- ✅ Initial OAuth connections for platforms
-- ✅ Project documentation structure
-- ✅ Basic utility scripts setup
+- ✅ Dual authentication system (Clerk + NextAuth)
+- ✅ Database schema with Prisma
+- ✅ OAuth connections for Twitter/X and GitHub
+- ✅ Project documentation
+- ✅ Redis integration for Nitter instance caching
+- ✅ Basic AI integration test (OpenRouter)
 
 ### In Progress
 
 - 🔄 Twitter/X data access via Nitter scraping
-- 🔄 Redis caching implementation
-- 🔄 GitHub Actions configuration for scraper tasks
+- 🔄 User dashboard development
+- 🔄 Platform data visualization components
 
 ## Short-term Roadmap (Next 3 Months)
 
-### Phase 1: Core Platform Access
+### Phase 1: Platform Data Collection 
 
-- Complete Twitter/X data scraping via Nitter
-- Implement basic user profile management
-- Finalize GitHub OAuth integration
-- Create initial dashboard UI
+- Complete Twitter/X Nitter scraper implementation
+- Add profile and tweet storage in database
+- Create basic metrics collection framework
+- Implement automatic data refresh scheduling
 
-### Phase 2: Basic Analytics
+### Phase 2: User Dashboard 
 
-- Implement basic metrics collection
-- Design analytics dashboard
-- Build profile visualization components
-- Add basic reporting features
+- Build comprehensive dashboard UI
+- Create platform connection management UI
+- Implement simple metrics visualization
+- Add user preference settings
 
-### Phase 3: AI Integration Foundation
+### Phase 3: Basic Analytics
 
-- Set up OpenRouter connection
-- Implement initial sentiment analysis
-- Create prompt templates for content analysis
-- Design AI suggestion UI components
+- Implement basic tweet performance tracking
+- Add GitHub contribution analysis
+- Create post frequency and engagement charts
+- Implement cross-platform activity timeline
 
-## Long-term Roadmap
+## Long-term Roadmap 
+
+### AI Integration Expansion
+
+- Expand AI test implementation to production features
+- Implement sentiment analysis for Twitter content
+- Add content improvement suggestions
+- Create automated weekly reports
 
 ### Additional Platform Integrations
 
-- LinkedIn integration
+- Add LinkedIn OAuth integration
+- Implement Facebook connection (pending API limitations)
+- Explore integration with Mastodon and other platforms
+
+### Advanced Analytics
+
+- Develop audience analysis features
+- Create engagement pattern recognition
+- Implement content topic classification
+- Add advanced visualization components
+
+### Mobile Support
+
+- Optimize UI for mobile devices
+- Add mobile notifications for reputation alerts
+- Create responsive dashboard layouts
+
+---
+
+*Note: This roadmap represents current plans and may be adjusted based on development progress and user feedback.*
+
+Last updated: May 18, 2025
 - Instagram integration
 - Mastodon/Fediverse integration
 - Custom website monitoring

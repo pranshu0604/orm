@@ -1,8 +1,6 @@
 # PRAN - Frequently Asked Questions
 
-> **Note**: This document addresses questions about the PRAN project, which is currently in early development. Some features mentioned are planned but not yet implemented.
-
-This document addresses common questions that developers might have when working with the PRAN (Public Reputation and Analysis Node) project.
+This document addresses common questions about the PRAN (Public Reputation and Analysis Node) project.
 
 ## General Questions
 
@@ -18,18 +16,14 @@ PRAN is in early development. Currently implemented:
 - Database schema
 - Initial Twitter/X data access via Nitter (in progress)
 
-Features under development or planned:
-- Platform API integrations
-- Data analysis capabilities
-- AI-powered insights
-- User dashboard with metrics
+### What technologies does PRAN use?
 
 PRAN is built using:
-- **Frontend**: Next.js 14, React, Tailwind CSS
+- **Frontend**: Next.js 15+, React 19, Tailwind CSS
 - **Authentication**: Clerk for primary auth, NextAuth for platform connections
 - **Database**: PostgreSQL with Prisma ORM
-- **AI Integration**: OpenRouter API (accessing various LLMs)
-- **Deployment**: Vercel for the application, Upstash for Redis, Supabase for PostgreSQL
+- **Caching**: Upstash Redis
+- **AI Integration**: OpenRouter API (test implementation)
 
 ## Development Environment
 
@@ -49,6 +43,47 @@ Essential environment variables include:
 - `CLERK_SECRET_KEY` and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk authentication
 - `NEXTAUTH_SECRET` and `NEXTAUTH_URL`: NextAuth configuration
 - `TWITTER_API_KEY`, `TWITTER_API_SECRET`: Twitter OAuth credentials
+- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: GitHub OAuth credentials
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Redis connection
+- `OPENROUTER_API_KEY`: AI service connection
+- `ENCRYPTION_SECRET_KEY`: For secure token storage
+
+## Authentication System
+
+### How does authentication work in PRAN?
+
+PRAN uses a dual authentication system:
+
+1. **Clerk**: For primary user authentication (sign-up, login)
+2. **NextAuth**: For connecting to social platforms via OAuth
+
+This separation allows users to maintain a single account while connecting to multiple platforms.
+
+### How are platform tokens stored?
+
+OAuth tokens for connected platforms are:
+1. Encrypted using crypto-js
+2. Stored in the database
+3. Decrypted only when needed for API requests
+
+## Redis Usage
+
+### What is Redis used for in the project?
+
+Redis is currently used for:
+1. Caching working Nitter instances for Twitter data access
+2. Storing temporary data during development
+
+### How do I check if Redis is working?
+
+Run the Redis connectivity check script:
+```bash
+npm run check-redis
+```
+
+---
+
+Last updated: May 18, 2025
 - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: GitHub OAuth credentials
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Redis connection
 - `OPENROUTER_API_KEY`: OpenRouter API access

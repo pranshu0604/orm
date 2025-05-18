@@ -1,16 +1,74 @@
 # Platform Integration Examples
 
-> **Important Notice**: This document describes both currently implemented functionality and planned features. Many of the examples shown here represent the intended architecture rather than fully implemented features.
-
-This document provides examples and implementation guidelines for platform integrations in PRAN.
+This document provides information about the current implementation of platform integrations in PRAN.
 
 ## Current Implementation Status
 
 - **Twitter/X**: Basic OAuth connection implemented; data scraping via Nitter in development
-- **GitHub**: OAuth connection implemented; data retrieval and analysis features planned
-- **Additional platforms**: Planned for future development
+- **GitHub**: OAuth connection implemented
 
-## Supported Platforms
+## OAuth Integration
+
+The project currently implements OAuth connections via NextAuth, with the following configurations:
+
+### Twitter/X Integration
+
+```typescript
+// In NextAuth configuration
+TwitterProvider({
+  clientId: process.env.TWITTER_API_KEY!,
+  clientSecret: process.env.TWITTER_API_SECRET!,
+  version: "2.0",
+  authorization: {
+    params: {
+      scope: "users.read tweet.read offline.access"
+    }
+  }
+})
+```
+
+### GitHub Integration
+
+```typescript
+// In NextAuth configuration
+GitHubProvider({
+  clientId: process.env.GITHUB_CLIENT_ID!,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+  authorization: { 
+    params: { 
+      scope: "read:user user:email" 
+    } 
+  }
+})
+```
+
+## Token Storage
+
+OAuth tokens are securely stored in the database using encryption:
+
+```typescript
+// In lib/encryption.ts
+import CryptoJS from 'crypto-js';
+
+export function encryptToken(token: string): string {
+  return CryptoJS.AES.encrypt(
+    token,
+    process.env.ENCRYPTION_SECRET_KEY || 'default-key'
+  ).toString();
+}
+
+export function decryptToken(encryptedToken: string): string {
+  const bytes = CryptoJS.AES.decrypt(
+    encryptedToken,
+    process.env.ENCRYPTION_SECRET_KEY || 'default-key'
+  );
+  return bytes.toString(CryptoJS.enc.Utf8);
+}
+```
+
+## Future Development
+
+Additional platform integrations and more complete data collection features are planned for future development.
 
 ## GitHub Integration
 

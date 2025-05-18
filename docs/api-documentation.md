@@ -1,24 +1,8 @@
 # PRAN API Documentation
 
-> **Development Status**: This document describes both currently implemented API endpoints and planned functionality. The API is under active development and subject to change.
+This document provides information about the currently implemented API endpoints in the PRAN system.
 
-This document provides information about the API endpoints available in the PRAN system.
-
-## Current Implementation Status
-
-- **User Synchronization API**: Implemented for Clerk integration
-- **NextAuth Authentication**: Implemented for platform OAuth connections
-- **Server Actions**: Partially implemented
-- **AI Analysis**: Planned for future development
-
-### Authorization
-
-For API requests, you will need to include the appropriate authentication headers:
-
-- Clerk authentication uses JWT tokens
-- NextAuth uses session cookies or JWT tokens based on configuration
-
-## API Endpoints
+## Implemented API Endpoints
 
 ### User Synchronization
 
@@ -48,6 +32,94 @@ Used by Clerk webhooks to keep user data in sync.
 - `200 OK` - Successful operation
 - `400 Bad Request` - Missing userId
 - `500 Internal Server Error` - Failed to sync user
+
+**Implementation:**
+
+```typescript
+// app/api/sync-user/route.ts
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    }
+
+    const clerkUser = await clerkClient.users.getUser(userId);
+
+    const email: string = clerkUser.emailAddresses[0]?.emailAddress || "";
+    const name: string = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ");
+    const image: string = clerkUser.imageUrl;
+
+    // Update or create user in database
+    await prisma.user.upsert({
+      where: { clerkId: userId },
+      update: { email, name, image },
+      create: { clerkId: userId, email, name, image },
+    });
+
+    return NextResponse.json({ message: "User synced" });
+  } catch (err) {
+    console.error("Error syncing user:", err);
+    return NextResponse.json({ error: "Failed to sync user" }, { status: 500 });
+  }
+}
+```
+
+### NextAuth Authentication
+
+Handles platform-specific OAuth authentication flows.
+
+#### `GET|POST /api/auth/[...nextauth]`
+
+This is a catch-all route that handles NextAuth operations, including sign-in and OAuth callbacks.
+
+**Implemented OAuth Providers:**
+
+1. **GitHub Provider**
+   - Scopes: `read:user`, `user:email`
+
+2. **Twitter/X Provider**
+   - Scopes: `users.read`, `tweet.read`, `offline.access`
+
+**Implementation:**
+
+```typescript
+// In app/api/auth/[...nextauth]/route.ts
+export const authOptions: AuthOptions = {
+  providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      authorization: { params: { scope: "read:user user:email" } },
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_API_KEY!,
+      clientSecret: process.env.TWITTER_API_SECRET!,
+      version: "2.0",
+      authorization: {
+        params: { scope: "users.read tweet.read offline.access" }
+      }
+    }),
+  ],
+  // Additional configuration...
+};
+```
+
+## Error Handling
+
+All API endpoints follow a consistent error format:
+
+```json
+{
+  "error": "Error message here"
+}
+```
+
+---
+
+Last updated: May 18, 2025
 
 **Usage Example:**
 

@@ -1,8 +1,6 @@
 # PRAN Installation Guide
 
-> **Important**: This guide covers installation for a project that is currently in early development. Some features mentioned may not be fully implemented yet.
-
-This guide provides instructions for setting up the PRAN (Public Reputation and Analysis Node) project for development.
+This guide provides detailed instructions for setting up the PRAN (Public Reputation and Analysis Node) project for development.
 
 ## Prerequisites
 
@@ -17,7 +15,7 @@ Before starting, ensure you have the following:
   - [Clerk](https://clerk.dev) for primary authentication
   - [GitHub Developer Settings](https://github.com/settings/developers) for OAuth
   - [Twitter Developer Portal](https://developer.twitter.com) for OAuth
-  - [OpenRouter](https://openrouter.ai) for AI features
+  - [OpenRouter](https://openrouter.ai) for AI testing
 
 ## Development Setup
 
@@ -49,6 +47,107 @@ CLERK_WEBHOOK_SECRET=whsec_...
 
 # Authentication - NextAuth
 NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=random-string-at-least-32-characters
+
+# Platform OAuth - Twitter
+TWITTER_API_KEY=...
+TWITTER_API_SECRET=...
+
+# Platform OAuth - GitHub
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+
+# Redis
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+
+# AI Integration
+OPENROUTER_API_KEY=...
+
+# Security
+ENCRYPTION_SECRET_KEY=random-string-at-least-32-characters
+```
+
+### 4. Initialize the Database
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Create database tables
+npx prisma migrate dev --name init
+```
+
+### 5. Start the Development Server
+
+```bash
+npm run dev
+```
+
+The application will be available at http://localhost:3000
+
+## Service Configuration
+
+### Clerk Setup
+
+1. Create a new application at [clerk.dev](https://clerk.dev)
+2. Configure the following settings:
+   - Enable Email/Password authentication
+   - Set authorized redirect URLs to include `http://localhost:3000`
+   - Create a webhook for the `user.created` event pointing to `/api/sync-user`
+
+### NextAuth Setup
+
+NextAuth is used for platform integrations:
+
+#### GitHub OAuth
+
+1. Go to GitHub Developer Settings > OAuth Apps > New OAuth App
+2. Set the following:
+   - Application name: PRAN Development
+   - Homepage URL: `http://localhost:3000`
+   - Authorization callback URL: `http://localhost:3000/api/auth/callback/github`
+3. Generate a client secret
+4. Add the client ID and secret to your environment variables
+
+#### Twitter OAuth
+
+1. Create a project in the [Twitter Developer Portal](https://developer.twitter.com)
+2. Add a new app within the project
+3. Set the following:
+   - Callback URL: `http://localhost:3000/api/auth/callback/twitter`
+   - Website URL: `http://localhost:3000`
+4. Under 'App permissions', select Read (User, Tweet)
+5. Add the API key and secret to your environment variables
+
+### OpenRouter Setup (for AI Testing)
+
+1. Sign up at [OpenRouter](https://openrouter.ai)
+2. Create an API key
+3. Add the key to your environment variables
+4. Test the AI integration at `/ai` route
+
+### Redis Setup
+
+1. Create a new Redis database at [Upstash](https://upstash.com/)
+2. Get the REST URL and token from the console
+3. Add them to your environment variables
+4. Test Redis connectivity by running:
+```bash
+npm run check-redis
+```
+
+## Verification
+
+To verify your setup is working:
+
+1. Register a new user through Clerk
+2. Connect your GitHub or Twitter account from the settings page
+3. Check that platform connections are stored in the database
+
+---
+
+Last updated: May 18, 2025
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
 
 # Platform API Keys

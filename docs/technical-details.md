@@ -1,7 +1,5 @@
 # Technical Implementation Details
 
-> **Important**: This document describes both implemented features and planned functionality. PRAN is currently in early development, and many features outlined here are not yet implemented.
-
 This document provides technical details about the PRAN (Public Reputation and Analysis Node) implementation for developers who need to modify or extend the system.
 
 ## Implementation Status
@@ -9,12 +7,12 @@ This document provides technical details about the PRAN (Public Reputation and A
 | Component | Status |
 |-----------|--------|
 | Next.js app structure | Implemented ✓ |
-| Authentication system | Basic implementation ✓ |
+| Authentication system | Implemented ✓ |
 | Database schema | Implemented ✓ |
-| Platform API integration | Partial implementation ✓ |
+| Platform OAuth integration | Implemented ✓ |
 | Twitter/X data scraping | In development |
-| AI analysis | Planned |
-| User dashboard | Planned |
+| AI integration test | Implemented ✓ |
+| Redis caching | Implemented ✓ |
 
 ## Project Structure
 
@@ -35,19 +33,294 @@ scripts/              # Utility scripts
 utils/                # Helper utilities
 ```
 
-## Core Systems
-
-The PRAN application consists of several core systems:
-
-1. **User Management System**: Handles user authentication and profile data
-2. **Platform Connections System**: Manages integration with social platforms
-3. **Data Collection System**: Gathers posts and metrics from connected platforms
-4. **Analysis System**: Uses AI to analyze content and provide insights
-5. **Nitter Scraper System**: Specialized Twitter/X data access
-
 ## Authentication Architecture
 
-### Dual Authentication System
+PRAN implements a dual authentication system:
+
+### Primary Authentication (Clerk)
+
+```typescript
+// middleware.ts
+import { authMiddleware } from "@clerk/nextjs";
+
+export default authMiddleware({
+  publicRoutes: ["/api/sync-user", "/api/auth/(.*)"],
+});
+
+export const config = {
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+};
+```
+
+### Platform OAuth (NextAuth)
+
+```typescript
+// app/api/auth/[...nextauth]/route.ts
+export const authOptions: AuthOptions = {
+  providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      authorization: { params: { scope: "read:user user:email" } },
+    }),
+    TwitterProvider({
+      clientId: process.env.TWITTER_API_KEY!,
+      clientSecret: process.env.TWITTER_API_SECRET!,
+      version: "2.0",
+      authorization: {
+        params: { scope: "users.read tweet.read offline.access" }
+      }
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, account }) {
+      if (account) {
+        token.accessToken = account.access_token;
+        token.provider = account.provider;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.accessToken = token.accessToken as string;
+        session.provider = token.provider as string;
+      }
+      return session;
+    },
+  },
+};
+
+export const handlers = NextAuth(authOptions);
+export { handlers as GET, handlers as POST };
+```
+
+### User Synchronization
+
+```typescript
+// app/api/sync-user/route.ts
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    }
+
+    const clerkUser = await clerkClient.users.getUser(userId);
+    
+    // Update user in database
+    await prisma.user.upsert({
+      where: { clerkId: userId },
+      update: { 
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" "),
+        image: clerkUser.imageUrl
+      },
+      create: { 
+        clerkId: userId,
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" "),
+        image: clerkUser.imageUrl
+      },
+    });
+
+    return NextResponse.json({ message: "User synced" });
+  } catch (err) {
+    console.error("Error syncing user:", err);
+    return NextResponse.json(
+      { error: "Failed to sync user" }, 
+      { status: 500 }
+    );
+  }
+}
+```
+
+## Database Schema
+
+```prisma
+// prisma/schema.prisma
+model User {
+  id                  String               @id @default(cuid())
+  clerkId             String               @unique
+  email               String               @unique
+  name                String?
+  image               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  platformConnections PlatformConnection[]
+}
+
+model PlatformConnection {
+  id           String       @id @default(cuid())
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  platform     PlatformType
+  platformId   String
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([userId, platform])
+  @@index([userId])
+}
+
+enum PlatformType {
+  TWITTER
+  GITHUB
+}
+```
+
+## Redis Integration
+
+PRAN uses Redis for caching Nitter instances:
+
+```typescript
+// lib/redis.ts
+import { Redis } from '@upstash/redis';
+
+export const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
+
+// Usage for caching working Nitter instances
+export async function getCachedWorkingNitters(): Promise<string[]> {
+  try {
+    const cachedNitters = await redis.get<string[]>('working_nitters');
+    return cachedNitters || [];
+  } catch (error) {
+    console.error('Error getting cached Nitters:', error);
+    return [];
+  }
+}
+```
+
+## AI Integration (Test Implementation)
+
+```typescript
+// app/actions/ai.ts
+export async function getStreamingAiCompletion(userPrompt: string): Promise<ReadableStream<Uint8Array>> {
+  const openai = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+    defaultHeaders: {
+      "X-Title": "P.R.A.N. - Public Reputation and Analysis Node",
+    },
+  });
+
+  const messages = [
+    {
+      role: "system",
+      content: "You are a helpful assistant for online reputation management."
+    },
+    {
+      role: "user",
+      content: userPrompt
+    }
+  ];
+
+  const stream = await openai.chat.completions.create({
+    model: "google/gemma-3-27b-it:free", 
+    messages: messages,
+    stream: true, 
+  });
+
+  // Create and return ReadableStream
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          controller.enqueue(encoder.encode(content));
+        }
+      }
+      controller.close();
+    },
+  });
+}
+```
+
+## Platform Token Storage
+
+PRAN securely stores OAuth tokens using encryption:
+
+```typescript
+// lib/encryption.ts
+import CryptoJS from 'crypto-js';
+
+export function encryptToken(token: string): string {
+  return CryptoJS.AES.encrypt(
+    token,
+    process.env.ENCRYPTION_SECRET_KEY || 'default-key'
+  ).toString();
+}
+
+export function decryptToken(encryptedToken: string): string {
+  const bytes = CryptoJS.AES.decrypt(
+    encryptedToken,
+    process.env.ENCRYPTION_SECRET_KEY || 'default-key'
+  );
+  return bytes.toString(CryptoJS.enc.Utf8);
+}
+```
+
+## Nitter Scraper (In Development)
+
+PRAN implements a Nitter scraper system to access Twitter/X data:
+
+```typescript
+// lib/scrapers/getWorkingNitter.ts
+import { redis } from '../redis';
+import { isNitterAlive } from './isAlive';
+
+const NITTER_INSTANCES = [
+  'https://nitter.net',
+  'https://nitter.kavin.rocks',
+  'https://nitter.unixfox.eu',
+  // Additional instances...
+];
+
+export async function getWorkingNitter(): Promise<string | null> {
+  try {
+    // Check Redis cache first
+    const cachedNitters = await redis.get<string[]>('working_nitters');
+    if (cachedNitters && cachedNitters.length > 0) {
+      for (const nitter of cachedNitters) {
+        if (await isNitterAlive(nitter)) {
+          return nitter;
+        }
+      }
+    }
+
+    // If no cached instances work, check all known instances
+    const workingNitters = [];
+    for (const nitter of NITTER_INSTANCES) {
+      if (await isNitterAlive(nitter)) {
+        workingNitters.push(nitter);
+      }
+    }
+
+    // Cache the working instances
+    if (workingNitters.length > 0) {
+      await redis.set('working_nitters', workingNitters, { ex: 3600 }); // Cache for 1 hour
+      return workingNitters[0];
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting working Nitter instance:', error);
+    return null;
+  }
+}
+```
+
+---
+
+Last updated: May 18, 2025
 
 The project uses a dual authentication approach:
 
