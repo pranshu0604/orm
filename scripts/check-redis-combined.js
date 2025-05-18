@@ -1,9 +1,25 @@
-// Check if Redis is properly configured and accessible
+// scripts/check-redis-combined.js
 require('dotenv').config(); // Load environment variables from .env file
 
-// Use direct require instead of the aliased import
+/**
+ * Combined script for checking Redis configuration and Nitter cache
+ * 
+ * Usage:
+ * node scripts/check-redis-combined.js [nitter]
+ * Pass 'nitter' argument to check Nitter cache in Redis
+ * No arguments to check general Redis configuration
+ */
+
 const { Redis } = require('@upstash/redis');
 
+// Parse args
+const checkNitter = process.argv.includes('nitter');
+console.log(`Checking Redis ${checkNitter ? 'Nitter cache' : 'configuration'}...`);
+
+// Cache key for Nitter
+const CACHE_KEY = "nitter:base_url";
+
+// Check general Redis configuration
 async function checkRedisConfig() {
   console.log("Checking Redis configuration...");
   
@@ -53,10 +69,54 @@ async function checkRedisConfig() {
   }
 }
 
-// Run the check
-checkRedisConfig()
+// Check Nitter cache in Redis
+async function checkCachedNitter() {
+  console.log("Checking Redis for cached Nitter instance...");
+  
+  try {
+    // Connect to Redis
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    
+    // Check if we have a cached URL
+    const cachedUrl = await redis.get(CACHE_KEY);
+    
+    if (cachedUrl) {
+      console.log(`✅ Found cached Nitter instance: ${cachedUrl}`);
+      
+      // Get TTL (time-to-live) for the key
+      const ttl = await redis.ttl(CACHE_KEY);
+      
+      if (ttl > 0) {
+        const hours = Math.floor(ttl / 3600);
+        const minutes = Math.floor((ttl % 3600) / 60);
+        console.log(`   Expires in: ${hours} hours, ${minutes} minutes`);
+      } else if (ttl === -1) {
+        console.log(`   This key has no expiration`);
+      } else {
+        console.log(`   This key has expired or doesn't exist`);
+      }
+      
+      return true;
+    } else {
+      console.log("❌ No cached Nitter instance found in Redis");
+      return false;
+    }
+  } catch (error) {
+    console.error("Error connecting to Redis:", error);
+    console.log("\nPlease check your Redis credentials:");
+    console.log("- UPSTASH_REDIS_REST_URL");
+    console.log("- UPSTASH_REDIS_REST_TOKEN");
+    return false;
+  }
+}
+
+// Run the appropriate check
+(checkNitter ? checkCachedNitter() : checkRedisConfig())
   .then(result => {
-    if (!result) {
+    if (!result && !checkNitter) {
       console.log("\nPlease make sure the following environment variables are set:");
       console.log("- UPSTASH_REDIS_REST_URL");
       console.log("- UPSTASH_REDIS_REST_TOKEN");

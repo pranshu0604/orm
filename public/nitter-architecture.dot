@@ -1,0 +1,56 @@
+digraph G {
+  rankdir=LR;
+  node [shape=box, style=filled, color=lightblue];
+  
+  // Main components
+  webapp [label="Web Application"];
+  redis [label="Redis Cache"];
+  github [label="GitHub Actions"];
+  nitter [label="Nitter Instances", shape=cloud];
+  
+  // Development components
+  playwright [label="Playwright\n(Development)", style=filled, color=lightgreen];
+  
+  // Fallbacks
+  fallback [label="Hardcoded\nFallbacks", style=filled, color=lightyellow];
+  
+  // Flows - Main production flow
+  webapp -> redis [label="1. Check cache"];
+  redis -> webapp [label="2. Return instance"];
+  github -> nitter [label="3. Scrape instances\n(Every 6 hours)"];
+  github -> redis [label="4. Update cache"];
+  
+  // Development flow
+  webapp -> playwright [label="1a. If in dev mode"];
+  playwright -> nitter [label="2a. Scrape directly"];
+  
+  // Fallback flow
+  redis -> fallback [label="If cache miss", style=dashed];
+  fallback -> webapp [label="Return fallback", style=dashed];
+  
+  // Subgraph for environments
+  subgraph cluster_0 {
+    label = "Production Environment";
+    color = lightgrey;
+    webapp; redis;
+  }
+  
+  subgraph cluster_1 {
+    label = "GitHub Action Environment";
+    color = lightgrey;
+    github;
+  }
+  
+  subgraph cluster_2 {
+    label = "Development Environment";
+    color = lightgrey;
+    playwright;
+  }
+  
+  // External
+  nitter [shape=cloud];
+  
+  // Labels
+  label = "Nitter Scraper Architecture";
+  fontsize = 20;
+}

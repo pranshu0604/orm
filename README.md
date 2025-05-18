@@ -8,6 +8,8 @@ P.R.A.N. – Public Reputation and Analysis Node
 - GitHub Actions scheduled updates in production
 - Multiple fallback mechanisms for reliability
 
+![Nitter Scraper Architecture](/public/images/nitter-scraper-architecture.png)
+
 ## Tech Stack
 
 - NextJS
@@ -21,4 +23,4 @@ P.R.A.N. – Public Reputation and Analysis Node
 
 ## Configuration
 
-See the [Nitter Scraper Setup Guide](./docs/nitter-scraper-setup.md) for detailed instructions on setting up the Twitter/X data scraping functionality.
+See the [Nitter Scraper Documentation](./docs/README.md) for comprehensive documentation about the Twitter/X data scraping functionality, including setup instructions, architecture details, and troubleshooting information.
