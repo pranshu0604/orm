@@ -7,7 +7,7 @@ import { encryptToken } from "@/lib/encryption";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Define interfaces for expected profile structures
+// extend interfaces for expected custom profile structures
 interface GitHubProfile extends Profile {
     id?: number;
     login?: string;
@@ -21,7 +21,7 @@ interface TwitterProfile extends Profile {
     }
 }
 
-// Setup global logger for debugging auth flows
+// global logger to debug auth flows
 const logger = {
   debug: (message: string, data?: any) => {
     console.log(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
@@ -39,7 +39,7 @@ const logger = {
 
 export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Enable NextAuth debug mode
+  debug: true,
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,

@@ -11,24 +11,21 @@ type ConnectionInfo = {
   platform: PlatformType;
   connectedAt: Date;
   profileId: string | null;
-  username: string | null; // Include username
+  username: string | null; 
 };
 
 
 export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> {
-  // --- Add await here ---
   const authData = await auth();
   const clerkId = authData.userId;
 
   if (!clerkId) {
-    // Consider throwing an error consistent with how Clerk middleware might handle it
-    // Or redirecting, though redirects in server actions can be tricky.
     throw new Error("User not authenticated.");
   }
 
   const dbUser = await prisma.user.findUnique({
     where: { clerkId },
-    select: { id: true } // Only select the ID
+    select: { id: true } 
   });
 
   if (!dbUser) {
@@ -42,7 +39,7 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
       platform: true,
       connectedAt: true,
       profileId: true,
-      username: true, // Select the username
+      username: true, 
     },
     orderBy: {
       platform: 'asc',
@@ -77,7 +74,7 @@ export async function disconnectPlatformAction(platform: PlatformType): Promise<
         if (error.code === 'P2025') { // Record to delete does not exist
              console.warn(`Attempted to disconnect ${platform} for user ${dbUser.id}, but no record found.`);
              revalidatePath('/settings/connections');
-             return { success: true }; // Treat as success if already disconnected
+             return { success: true }; 
         }
         console.error(`Error disconnecting ${platform}:`, error);
         return { success: false, error: `Failed to disconnect ${platform}.` };
