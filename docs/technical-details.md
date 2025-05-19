@@ -58,6 +58,48 @@ Clerk handles the main user authentication:
 - Provides secure session management
 - Syncs user data to the application database
 
+User synchronization is handled by the sync-user API endpoint:
+
+```typescript
+// app/api/sync-user/route.ts
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    }
+
+    const clerkUser = await clerkClient.users.getUser(userId);
+    
+    // Update user in database
+    await prisma.user.upsert({
+      where: { clerkId: userId },
+      update: { 
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" "),
+        image: clerkUser.imageUrl
+      },
+      create: { 
+        clerkId: userId,
+        email: clerkUser.emailAddresses[0]?.emailAddress || "",
+        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" "),
+        image: clerkUser.imageUrl
+      },
+    });
+
+    return NextResponse.json({ message: "User synced" });
+  } catch (err) {
+    console.error("Error syncing user:", err);
+    return NextResponse.json(
+      { error: "Failed to sync user" }, 
+      { status: 500 }
+    );
+  }
+}
+```
+
 ### Platform OAuth (NextAuth)
 
 ```typescript
@@ -124,258 +166,39 @@ NextAuth is used specifically for platform connections:
 └───────────┘         └───────────┘         └───────────┘
 ```
 
-### User Synchronization
+### Token Encryption
 
-```typescript
-// app/api/sync-user/route.ts
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { userId } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
-    }
-
-    const clerkUser = await clerkClient.users.getUser(userId);
-    
-    // Update user in database
-    await prisma.user.upsert({
-      where: { clerkId: userId },
-      update: { 
-        email: clerkUser.emailAddresses[0]?.emailAddress || "",
-        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" "),
-        image: clerkUser.imageUrl
-      },
-      create: { 
-        clerkId: userId,
-        email: clerkUser.emailAddresses[0]?.emailAddress || "",
-        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" "),
-        image: clerkUser.imageUrl
-      },
-    });
-
-    return NextResponse.json({ message: "User synced" });
-  } catch (err) {
-    console.error("Error syncing user:", err);
-    return NextResponse.json(
-      { error: "Failed to sync user" }, 
-      { status: 500 }
-    );
-  }
-}
-```
-
-## Database Schema
-
-```prisma
-// prisma/schema.prisma
-model User {
-  id                  String               @id @default(cuid())
-  clerkId             String               @unique
-  email               String               @unique
-  name                String?
-  image               String?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  platformConnections PlatformConnection[]
-}
-
-model PlatformConnection {
-  id           String       @id @default(cuid())
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-  platform     PlatformType
-  platformId   String
-  accessToken  String
-  refreshToken String?
-  expiresAt    DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  @@unique([userId, platform])
-  @@index([userId])
-}
-
-enum PlatformType {
-  TWITTER
-  GITHUB
-}
-```
-
-## Redis Integration
-
-PRAN uses Redis for caching Nitter instances:
-
-```typescript
-// lib/redis.ts
-import { Redis } from '@upstash/redis';
-
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
-
-// Usage for caching working Nitter instances
-export async function getCachedWorkingNitters(): Promise<string[]> {
-  try {
-    const cachedNitters = await redis.get<string[]>('working_nitters');
-    return cachedNitters || [];
-  } catch (error) {
-    console.error('Error getting cached Nitters:', error);
-    return [];
-  }
-}
-```
-
-## AI Integration (Test Implementation)
-
-```typescript
-// app/actions/ai.ts
-export async function getStreamingAiCompletion(userPrompt: string): Promise<ReadableStream<Uint8Array>> {
-  const openai = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY,
-    defaultHeaders: {
-      "X-Title": "P.R.A.N. - Public Reputation and Analysis Node",
-    },
-  });
-
-  const messages = [
-    {
-      role: "system",
-      content: "You are a helpful assistant for online reputation management."
-    },
-    {
-      role: "user",
-      content: userPrompt
-    }
-  ];
-
-  const stream = await openai.chat.completions.create({
-    model: "google/gemma-3-27b-it:free", 
-    messages: messages,
-    stream: true, 
-  });
-
-  // Create and return ReadableStream
-  const encoder = new TextEncoder();
-  return new ReadableStream({
-    async start(controller) {
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          controller.enqueue(encoder.encode(content));
-        }
-      }
-      controller.close();
-    },
-  });
-}
-```
-
-## Platform Token Storage
-
-PRAN securely stores OAuth tokens using encryption:
+Sensitive OAuth tokens are encrypted before storage:
 
 ```typescript
 // lib/encryption.ts
 import CryptoJS from 'crypto-js';
 
-export function encryptToken(token: string): string {
-  return CryptoJS.AES.encrypt(
-    token,
-    process.env.ENCRYPTION_SECRET_KEY || 'default-key'
-  ).toString();
-}
+// Get encryption key from environment
+const secretKey = process.env.ENCRYPTION_SECRET_KEY;
 
-export function decryptToken(encryptedToken: string): string {
-  const bytes = CryptoJS.AES.decrypt(
-    encryptedToken,
-    process.env.ENCRYPTION_SECRET_KEY || 'default-key'
-  );
-  return bytes.toString(CryptoJS.enc.Utf8);
-}
-```
-
-## Nitter Scraper (In Development)
-
-PRAN implements a Nitter scraper system to access Twitter/X data:
-
-```typescript
-// lib/scrapers/getWorkingNitter.ts
-import { redis } from '../redis';
-import { isNitterAlive } from './isAlive';
-
-const NITTER_INSTANCES = [
-  'https://nitter.net',
-  'https://nitter.kavin.rocks',
-  'https://nitter.unixfox.eu',
-  // Additional instances...
-];
-
-export async function getWorkingNitter(): Promise<string | null> {
+export function encryptToken(token: string | null | undefined): string | null {
+  if (!token) return null;
   try {
-    // Check Redis cache first
-    const cachedNitters = await redis.get<string[]>('working_nitters');
-    if (cachedNitters && cachedNitters.length > 0) {
-      for (const nitter of cachedNitters) {
-        if (await isNitterAlive(nitter)) {
-          return nitter;
-        }
-      }
-    }
-
-    // If no cached instances work, check all known instances
-    const workingNitters = [];
-    for (const nitter of NITTER_INSTANCES) {
-      if (await isNitterAlive(nitter)) {
-        workingNitters.push(nitter);
-      }
-    }
-
-    // Cache the working instances
-    if (workingNitters.length > 0) {
-      await redis.set('working_nitters', workingNitters, { ex: 3600 }); // Cache for 1 hour
-      return workingNitters[0];
-    }
-
-    return null;
+    return CryptoJS.AES.encrypt(token, getKey()).toString();
   } catch (error) {
-    console.error('Error getting working Nitter instance:', error);
+    console.error("Encryption failed:", error);
+    return null;
+  }
+}
+
+export function decryptToken(encryptedToken: string | null | undefined): string | null {
+  if (!encryptedToken) return null;
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedToken, getKey());
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    return decrypted || null;
+  } catch (error) {
+    console.error("Decryption failed:", error);
     return null;
   }
 }
 ```
-
----
-
-Last updated: May 19, 2025
-
-```
-┌───────────┐         ┌───────────┐         ┌───────────┐
-│           │         │           │         │           │
-│   User    │────────▶│   Clerk   │────────▶│ Database  │
-│           │         │           │         │           │
-└───────────┘         └───────────┘         └───────────┘
-                                                  │
-                                                  │
-                                                  ▼
-┌───────────┐         ┌───────────┐         ┌───────────┐
-│           │         │           │         │           │
-│ Platform  │◀────────│ NextAuth  │◀────────│   PRAN    │
-│           │         │           │         │   App     │
-└───────────┘         └───────────┘         └───────────┘
-```
-
-### User Synchronization
-
-When a user authenticates with Clerk:
-
-1. The user is redirected to the application
-2. The `useSyncClient.tsx` hook triggers the user sync API
-3. The `/api/sync-user/route.ts` endpoint creates or updates the user in the database
-4. The user can then connect platforms using NextAuth
 
 ## Data Model
 
@@ -491,108 +314,6 @@ model PerformanceReport {
 }
 ```
 
-## Authentication Implementation
-
-### Clerk Integration
-
-The application uses Clerk for primary user authentication:
-
-```typescript
-// middleware.ts
-import { authMiddleware } from "@clerk/nextjs";
-
-export default authMiddleware({
-  // Public routes that don't require authentication
-  publicRoutes: ["/", "/api/sync-user", "/api/auth(.*)"],
-});
-
-export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
-};
-```
-
-User synchronization is handled by the sync-user API endpoint:
-
-```typescript
-// app/api/sync-user/route.ts (simplified)
-export async function POST(req: Request) {
-  const { userId } = await req.json();
-  
-  // Get user details from Clerk
-  const clerkUser = await clerkClient.users.getUser(userId);
-  
-  // Sync to database using Prisma
-  await prisma.user.upsert({
-    where: { clerkId: userId },
-    update: { /* user data */ },
-    create: { /* user data */ },
-  });
-}
-```
-
-### NextAuth Implementation
-
-NextAuth is used specifically for platform connections:
-
-```typescript
-// app/api/auth/[...nextauth]/route.ts (simplified)
-export const authOptions: AuthOptions = {
-  providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      // Configure scopes
-    }),
-    TwitterProvider({
-      clientId: process.env.TWITTER_API_KEY!,
-      clientSecret: process.env.TWITTER_API_SECRET!,
-      version: "2.0",
-      // Configure OAuth 2.0 settings
-    }),
-  ],
-  callbacks: {
-    // Custom callbacks for syncing with main user system
-  },
-};
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
-```
-
-### Token Encryption
-
-Sensitive OAuth tokens are encrypted before storage:
-
-```typescript
-// lib/encryption.ts
-import CryptoJS from 'crypto-js';
-
-// Get encryption key from environment
-const secretKey = process.env.ENCRYPTION_SECRET_KEY;
-
-export function encryptToken(token: string | null | undefined): string | null {
-  if (!token) return null;
-  try {
-    return CryptoJS.AES.encrypt(token, getKey()).toString();
-  } catch (error) {
-    console.error("Encryption failed:", error);
-    return null;
-  }
-}
-
-export function decryptToken(encryptedToken: string | null | undefined): string | null {
-  if (!encryptedToken) return null;
-  try {
-    const bytes = CryptoJS.AES.decrypt(encryptedToken, getKey());
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    return decrypted || null;
-  } catch (error) {
-    console.error("Decryption failed:", error);
-    return null;
-  }
-}
-```
-
 ## Server Actions
 
 The application uses Next.js server actions for core functionality:
@@ -629,48 +350,6 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
 // Disconnect a platform
 export async function disconnectPlatformAction(platform: PlatformType): Promise<boolean> {
   // Implementation
-}
-```
-
-### AI Integration
-
-The application uses OpenRouter to access AI models:
-
-```typescript
-// app/actions/ai.ts (simplified)
-'use server'
-
-import OpenAI from 'openai';
-import { Stream } from 'openai/streaming'; 
-
-const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    "X-Title": "P.R.A.N. - Public Reputation and Analysis Node",
-  },
-});
-
-export async function getStreamingAiCompletion(userPrompt: string): Promise<ReadableStream<Uint8Array>> {
-  const messages = [
-    {
-      role: "system",
-      content: "You are a helpful assistant for online reputation management."
-    },
-    {
-      role: "user",
-      content: userPrompt
-    }
-  ];
-
-  const stream = await openai.chat.completions.create({
-    model: "google/gemma-3-27b-it:free", 
-    messages: messages,
-    stream: true, 
-  });
-  
-  // Transform stream to ReadableStream
-  // ...
 }
 ```
 
