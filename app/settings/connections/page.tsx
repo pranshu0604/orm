@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { signIn } from 'next-auth/react';
 import { PlatformType } from '@prisma/client';
@@ -22,8 +22,8 @@ export default function ConnectionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Function to fetch connections
-  const fetchData = async () => {
+  // Function to fetch connections (memoized to satisfy hook dependency rules)
+  const fetchData = useCallback(async () => {
     if (!clerkUser) return;
     setIsLoading(true);
     setError(null);
@@ -36,7 +36,7 @@ export default function ConnectionsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [clerkUser]);
 
   // Fetch data on load and when Clerk user is available
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function ConnectionsPage() {
     if (isClerkLoaded && !clerkUser) {
         setIsLoading(false);
     }
-  }, [clerkUser, isClerkLoaded]);
+  }, [isClerkLoaded, fetchData, clerkUser]);
 
    // Get display info for a connected platform
    const getConnectionInfo = (platform: PlatformType): ConnectionInfo | undefined => {

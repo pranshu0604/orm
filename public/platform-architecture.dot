@@ -59,10 +59,10 @@ digraph G {
         color="#e6e6ff";
         fontname="Arial";
         
-        OpenRouter [label="OpenRouter\nAI Gateway"];
+        AIMicroservice [label="AI Microservice\n(FastAPI)"];
         LLMs [label="Large Language\nModels"];
         
-        OpenRouter -> LLMs;
+        AIMicroservice -> LLMs;
     }
     
     // External connections
@@ -78,7 +78,7 @@ digraph G {
     ServerActions -> NitterScraper;
     ServerActions -> TwitterAPI;
     ServerActions -> GithubAPI;
-    ServerActions -> OpenRouter;
+    ServerActions -> AIMicroservice;
     
     NitterScraper -> Redis;
     

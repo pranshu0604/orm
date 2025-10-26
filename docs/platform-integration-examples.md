@@ -134,7 +134,15 @@ export async function fetchGitHubRepositories(userId: string) {
 #### Analyzing GitHub Presence
 
 ```typescript
-import { analyzeContent } from "@/app/actions/ai";
+// Instead of a local server action, call the FastAPI AI microservice (see `AI_SERVICE_URL` env var)
+async function callAiMicroservice(prompt: string, max_tokens = 512) {
+  const res = await fetch(`${process.env.AI_SERVICE_URL}/v1/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, max_tokens, stream: false }),
+  });
+  return res.json();
+}
 
 export async function analyzeGitHubProfile(userId: string) {
   // Fetch user data and repositories
@@ -161,14 +169,10 @@ export async function analyzeGitHubProfile(userId: string) {
     })),
   };
   
-  // Use AI to analyze GitHub presence
-  const analysis = await analyzeContent(
-    JSON.stringify(contentToAnalyze),
-    userId,
-    "github_presence"
-  );
-  
-  return analysis;
+  // Use the AI microservice to analyze GitHub presence
+  const prompt = `Analyze the following GitHub profile and repositories:\n${JSON.stringify(contentToAnalyze)}`;
+  const resp = await callAiMicroservice(prompt, 512);
+  return resp;
 }
 ```
 
@@ -177,8 +181,7 @@ export async function analyzeGitHubProfile(userId: string) {
 #### Analyzing GitHub Presence
 
 ```typescript
-import { analyzeContent } from "@/app/actions/ai";
-
+// Use the AI microservice via callAiMicroservice (see above) to analyze content
 export async function analyzeGitHubProfile(userId: string) {
   // Fetch user data and repositories
   const userData = await fetchGitHubUserData(userId);
@@ -204,14 +207,9 @@ export async function analyzeGitHubProfile(userId: string) {
     })),
   };
   
-  // Use AI to analyze GitHub presence
-  const analysis = await analyzeContent(
-    JSON.stringify(contentToAnalyze),
-    userId,
-    "github_presence"
-  );
-  
-  return analysis;
+  const prompt = `Analyze the following GitHub profile and repositories:\n${JSON.stringify(contentToAnalyze)}`;
+  const resp = await callAiMicroservice(prompt, 512);
+  return resp;
 }
 ```
 
@@ -353,7 +351,7 @@ Provide an analysis of the professional tone, engagement patterns, and network q
 Suggest specific improvements for better professional positioning.
 `;
 
-// In app/actions/ai.ts
+// In the AI microservice (`ai/`) or via server-side proxy
 case "linkedin_presence":
   prompt = LINKEDIN_ANALYSIS_PROMPT
     .replace("{{profile}}", data.profile)
@@ -438,7 +436,7 @@ Provide an analysis of visual consistency, engagement patterns, and audience res
 Suggest specific improvements for better visual storytelling and engagement.
 `;
 
-// In app/actions/ai.ts
+// In the AI microservice (`ai/`) or a server-side proxy that forwards to it
 case "instagram_presence":
   prompt = INSTAGRAM_ANALYSIS_PROMPT
     .replace("{{profile}}", data.profile)

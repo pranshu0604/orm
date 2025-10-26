@@ -12,10 +12,10 @@ Before starting, ensure you have the following:
 - PostgreSQL database (Neon recommended)
 - Redis instance (Upstash recommended)
 - Access to:
-  - [Clerk](https://clerk.dev) for primary authentication
-  - [GitHub Developer Settings](https://github.com/settings/developers) for OAuth
-  - [Twitter Developer Portal](https://developer.twitter.com) for OAuth
-  - [OpenRouter](https://openrouter.ai) for AI testing
+   - [Clerk](https://clerk.dev) for primary authentication
+   - [GitHub Developer Settings](https://github.com/settings/developers) for OAuth
+   - [Twitter Developer Portal](https://developer.twitter.com) for OAuth
+   - (Optional) a model provider if you plan to configure the AI microservice with a remote model endpoint
 
 ## Development Setup
 
@@ -61,8 +61,9 @@ GITHUB_CLIENT_SECRET=...
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
 
-# AI Integration
-OPENROUTER_API_KEY=...
+# AI Microservice (FastAPI)
+# Point to the running AI microservice. For local dev the default is http://localhost:8000
+AI_SERVICE_URL=http://localhost:8000
 
 # Security
 ENCRYPTION_SECRET_KEY=random-string-at-least-32-characters
@@ -120,12 +121,43 @@ NextAuth is used for platform integrations:
 4. Under 'App permissions', select Read (User, Tweet)
 5. Add the API key and secret to your environment variables
 
-### OpenRouter Setup (for AI Testing)
+### AI Microservice (FastAPI)
 
-1. Sign up at [OpenRouter](https://openrouter.ai)
-2. Create an API key
-3. Add the key to your environment variables
-4. Test the AI integration at `/ai` route
+PRAN now uses a separate FastAPI microservice located in the `ai/` folder. The microservice centralizes model credentials and streaming logic and can be run independently (useful for GPU-backed deployments).
+
+1. Enter the `ai/` folder:
+
+```bash
+cd ai
+```
+
+2. Create and activate a Python virtual environment and install dependencies:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+```
+
+3. Configure the microservice environment (create `ai/.env` or export env vars):
+
+- `OPENAI_COMPAT_BASE_URL` or `MODEL_ENDPOINT` — optional base URL for an OpenAI-compatible model endpoint
+- `MODEL_API_KEY` — optional API key for the model endpoint
+- `MODEL_NAME` — optional default model name
+
+4. Run the microservice locally:
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+5. Verify the health endpoint:
+
+```bash
+curl http://localhost:8000/v1/health
+```
+
+6. Point the Next.js app to the microservice by setting `AI_SERVICE_URL` in `.env.local` (see above).
 
 ### Redis Setup
 

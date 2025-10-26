@@ -142,13 +142,15 @@ The Nitter scraper architecture:
 3. Uses GitHub Actions for scheduled updates in production
 4. Implements fallback mechanisms for reliability
 
-### AI Integration
+## AI Integration
 
-The AI system uses:
+The AI system is implemented as a separate FastAPI microservice in the `ai/` directory. When contributing, use the microservice's HTTP interface (or a server-side proxy) instead of adding model credentials to the Next.js app.
 
-1. OpenRouter API to access Gemini models
-2. Prompt templates for specific analysis tasks
-3. Caching to minimize API calls and costs
+Key points:
+
+1. The microservice exposes `/v1/completions` and supports streaming responses
+2. Keep model credentials inside the microservice environment
+3. Use prompt templates and small helper functions in the Next.js app to call the microservice
 
 ## Adding New Features
 
@@ -167,8 +169,8 @@ To add a new platform (e.g., LinkedIn):
 To add a new AI analysis type:
 
 1. Create a new prompt template in `lib/ai/prompts.ts`
-2. Implement the analysis logic in `app/actions/ai.ts`
-3. Add the UI components for displaying the analysis
+2. Implement a server-side proxy or helper that calls the AI microservice (use `AI_SERVICE_URL`)
+3. Add UI components for displaying the analysis
 4. Update the documentation
 
 ## Troubleshooting Common Issues
@@ -193,7 +195,7 @@ To add a new AI analysis type:
 
 ### AI Integration Issues
 
-- Verify OpenRouter API key is correctly set
+- Verify the AI microservice is reachable and configured (check `AI_SERVICE_URL` and microservice credentials)
 - Check rate limits and quotas
 - Review prompt templates for potential improvements
 

@@ -22,8 +22,8 @@ PRAN is built using:
 - **Frontend**: Next.js 15+, React 19, Tailwind CSS
 - **Authentication**: Clerk for primary auth, NextAuth for platform connections
 - **Database**: PostgreSQL with Prisma ORM
-- **Caching**: Upstash Redis
-- **AI Integration**: OpenRouter API (test implementation)
+ - **Caching**: Upstash Redis
+ - **AI Integration**: FastAPI microservice (see `../ai`) that provides completions and streaming
 
 ## Development Environment
 
@@ -44,8 +44,8 @@ Essential environment variables include:
 - `NEXTAUTH_SECRET` and `NEXTAUTH_URL`: NextAuth configuration
 - `TWITTER_API_KEY`, `TWITTER_API_SECRET`: Twitter OAuth credentials
 - `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`: GitHub OAuth credentials
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Redis connection
-- `OPENROUTER_API_KEY`: AI service connection
+ - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Redis connection
+ - `AI_SERVICE_URL`: URL of the running AI microservice (e.g. http://localhost:8000)
 - `ENCRYPTION_SECRET_KEY`: For secure token storage
 
 ## Authentication System
@@ -161,11 +161,11 @@ PRAN's AI integration provides:
 
 ### How is AI integrated into the application?
 
-The application uses:
-- Server actions to make secure API calls
-- Streaming responses for a responsive UI
+The application uses a small FastAPI microservice (`ai/`) to host AI/model integration. The Next.js app communicates with this microservice via `AI_SERVICE_URL`.
+
+- Server-side forwarding (recommended) or direct HTTP calls to the microservice
+- Streaming responses for responsive UI (microservice supports SSE-style streaming)
 - Structured prompts for consistent results
-- OpenRouter API to access various AI models
 
 ### Can AI in PRAN access my social media accounts directly?
 

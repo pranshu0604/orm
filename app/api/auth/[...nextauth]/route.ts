@@ -23,13 +23,13 @@ interface TwitterProfile extends Profile {
 
 // global logger to debug auth flows
 const logger = {
-  debug: (message: string, data?: any) => {
+  debug: (message: string, data?: unknown) => {
     console.log(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
   },
-  info: (message: string, data?: any) => {
+  info: (message: string, data?: unknown) => {
     console.log(`[INFO] ${message}`, data ? JSON.stringify(data, null, 2) : '');
   },
-  error: (message: string, error?: any) => {
+  error: (message: string, error?: unknown) => {
     console.error(`[ERROR] ${message}`, error);
     if (error instanceof Error) {
       console.error(`Stack: ${error.stack}`);
@@ -37,7 +37,7 @@ const logger = {
   }
 };
 
-export const authOptions: AuthOptions = {
+const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
   providers: [
@@ -85,7 +85,7 @@ export const authOptions: AuthOptions = {
               }
             );
             return { tokens: response };
-          } catch (error: any) {
+          } catch (error: unknown) {
             logger.error('Twitter token exchange error:', error);
             throw error;
           }
@@ -141,7 +141,7 @@ export const authOptions: AuthOptions = {
       let platform: PlatformType;
       let platformProfileId: string | undefined;
       let platformUsername: string | undefined;
-      let scopes = account.scope || '';
+  const scopes = account.scope || '';
 
       switch (account.provider) {
         case "github":
@@ -210,7 +210,7 @@ export const authOptions: AuthOptions = {
 
         return '/settings/connections?success=true';
 
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error(`NextAuth signIn: Error saving platform connection for ${platform}:`, error);
         return '/settings/connections?error=db_error';
       }
@@ -245,7 +245,7 @@ export const authOptions: AuthOptions = {
 const nextAuthHandler = NextAuth(authOptions);
 
 // Simplified request handlers
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, context: unknown) {
   try {
     const response = await nextAuthHandler(req, context);
     return response;
@@ -255,7 +255,7 @@ export async function GET(req: NextRequest, context: any) {
   }
 }
 
-export async function POST(req: NextRequest, context: any) {
+export async function POST(req: NextRequest, context: unknown) {
   try {
     const response = await nextAuthHandler(req, context);
     return response;

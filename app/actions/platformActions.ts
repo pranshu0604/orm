@@ -1,6 +1,6 @@
 'use server';
 
-import { PrismaClient, PlatformConnection, PlatformType } from '@prisma/client';
+import { PrismaClient, PlatformType } from '@prisma/client';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
@@ -70,13 +70,14 @@ export async function disconnectPlatformAction(platform: PlatformType): Promise<
         console.log(`Disconnected ${platform} for user ${dbUser.id}`);
         revalidatePath('/settings/connections');
         return { success: true };
-    } catch (error: any) {
-        if (error.code === 'P2025') { // Record to delete does not exist
-             console.warn(`Attempted to disconnect ${platform} for user ${dbUser.id}, but no record found.`);
-             revalidatePath('/settings/connections');
-             return { success: true }; 
-        }
-        console.error(`Error disconnecting ${platform}:`, error);
-        return { success: false, error: `Failed to disconnect ${platform}.` };
+  } catch (error: unknown) {
+    const e = error as { code?: string };
+    if (e.code === 'P2025') { // Record to delete does not exist
+       console.warn(`Attempted to disconnect ${platform} for user ${dbUser.id}, but no record found.`);
+       revalidatePath('/settings/connections');
+       return { success: true };
     }
+    console.error(`Error disconnecting ${platform}:`, error);
+    return { success: false, error: `Failed to disconnect ${platform}.` };
+  }
 }

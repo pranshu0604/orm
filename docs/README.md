@@ -39,7 +39,7 @@ PRAN is built with:
 - **Next.js 15** with App Router (React 19)
 - **PostgreSQL** with Prisma ORM
 - **Redis** cache via Upstash
-- **OpenRouter** for AI functionality (test implementation)
+ - **FastAPI-based AI microservice** (in `../ai`) for AI functionality and streaming
 - **Dual authentication system** (Clerk + NextAuth)
 - **Tailwind CSS** and shadcn/ui components
 
@@ -136,8 +136,7 @@ For each post, the system tracks:
 - Click-through rates where available
 
 ### AI-Generated Insights
-
-Using OpenRouter (with Gemini models), the system provides:
+- Using the FastAPI AI microservice (see `../ai`), the system provides:
 - Content improvement suggestions
 - Audience growth recommendations
 - Crisis management advice when negative sentiment is detected
@@ -259,8 +258,9 @@ GITHUB_CLIENT_SECRET=
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 
-# AI
-OPENROUTER_API_KEY=
+# AI microservice
+# Point this at the running FastAPI microservice (default local dev: http://localhost:8000)
+AI_SERVICE_URL=
 
 # Security
 ENCRYPTION_SECRET_KEY=
@@ -363,20 +363,20 @@ To verify that everything is working:
    - Configure production webhooks
 
 4. **Environment Variables**
-   - Add all environment variables to your Vercel project:
-     - DATABASE_URL
-     - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-     - CLERK_SECRET_KEY
-     - NEXTAUTH_URL (set to your production URL)
-     - NEXTAUTH_SECRET
-     - GITHUB_CLIENT_ID
-     - GITHUB_CLIENT_SECRET
-     - TWITTER_API_KEY
-     - TWITTER_API_SECRET
-     - OPENROUTER_API_KEY
-     - UPSTASH_REDIS_REST_URL
-     - UPSTASH_REDIS_REST_TOKEN
-     - ENCRYPTION_SECRET_KEY
+    - Add all environment variables to your Vercel project (or equivalent platform):
+       - DATABASE_URL
+       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+       - CLERK_SECRET_KEY
+       - NEXTAUTH_URL (set to your production URL)
+       - NEXTAUTH_SECRET
+       - GITHUB_CLIENT_ID
+       - GITHUB_CLIENT_SECRET
+       - TWITTER_API_KEY
+       - TWITTER_API_SECRET
+       - UPSTASH_REDIS_REST_URL
+       - UPSTASH_REDIS_REST_TOKEN
+       - ENCRYPTION_SECRET_KEY
+    - Note: the AI microservice (`ai/`) manages its own model credentials. If you host the microservice separately, make sure the microservice environment includes the model endpoint and API keys it needs.
 
 5. **GitHub Repository Secrets**
    - Go to your GitHub repository → Settings → Secrets and variables → Actions
@@ -453,7 +453,7 @@ To verify that everything is working:
    - Test the scraper manually if issues are reported
 
 4. **AI Integration**:
-   - Stay updated on OpenRouter API changes
+   - Stay updated on the AI microservice and upstream model-provider API changes
    - Monitor AI request costs and usage
    - Periodically review and refine AI prompts for better results
 
@@ -484,7 +484,7 @@ To verify that everything is working:
    - Consider current uptime and geographical distribution
 
 2. **Updating AI Models**:
-   - Update the model name in `app/actions/ai.ts`
+   - Update the model name/config in the AI microservice (see `ai/`) or in your proxying code if you override model selection there
    - Test with a variety of prompts before deploying
    - Monitor performance and cost changes
 
@@ -534,10 +534,10 @@ For common issues and solutions, refer to the [FAQ](./faq.md).
      - Update hardcoded fallback instances
      - Check if target page structures have changed
 
-5. **AI Integration Issues**:
-   - Verify the OpenRouter API key is valid
-   - Check if the selected model is still available
-   - Monitor rate limits and quotas
+4. **AI Integration Issues**:
+   - Verify the AI microservice is reachable and configured (check `AI_SERVICE_URL` and the microservice logs)
+   - Check the model endpoint and credentials used by the microservice
+   - Monitor rate limits and quotas of the upstream model provider
 
 ### Diagnostic Commands
 

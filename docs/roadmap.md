@@ -14,7 +14,7 @@ PRAN is currently in early development with a focus on establishing the core arc
 - ✅ OAuth connections for Twitter/X and GitHub
 - ✅ Project documentation
 - ✅ Redis integration for Nitter instance caching
-- ✅ Basic AI integration test (OpenRouter)
+- ✅ Basic AI microservice integration (FastAPI)
 
 ### In Progress
 

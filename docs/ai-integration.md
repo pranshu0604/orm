@@ -1,141 +1,85 @@
-# AI Integration in PRAN
+# AI Integration in PRAN (FastAPI microservice)
 
-This document describes the current AI integration implementation in PRAN.
+This repository now uses a small FastAPI-based AI microservice located in the top-level `ai/` folder. The Next.js app no longer contains the previous in-app server action or the local AI test page — instead the frontend should call the microservice or proxy requests to it.
 
-## Current Implementation
+Overview
 
-The current implementation is a basic test of OpenRouter connectivity and streaming responses. This is a foundation for future AI features but does not yet include the complete planned functionality.
+- Microservice: `ai/` (FastAPI + uvicorn)
+- Primary endpoints:
+  - `GET /v1/health` — health check
+  - `POST /v1/completions` — synchronous completion (JSON body)
+    - payload: `{ "prompt": "...", "max_tokens": 256, "stream": false }`
+    - response: `{ "text": "..." }`
+  - `POST /v1/completions?stream=true` — returns a server-sent / streaming response (SSE-style) when `stream=true`
 
-### Test Implementation
+Where the AI work happens
 
-```tsx
-// app/ai/page.tsx (test implementation only)
-'use client'
+The FastAPI microservice wraps an OpenAI-compatible client when configured (for example, NVIDIA integrate or any OpenAI-compatible endpoint). When an upstream model endpoint is not provided, the microservice returns mock responses suitable for local development and testing.
 
-import { useState } from 'react';
-import { getStreamingAiCompletion } from '../actions/ai';
+Running the microservice (local dev)
 
-export default function AiTestPage() {
-  const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+1. Enter the `ai/` directory:
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!prompt || isLoading) return;
-
-    setIsLoading(true);
-    setResponse('');
-    setError(null);
-
-    try {
-      const stream = await getStreamingAiCompletion(prompt);
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        setResponse((prev) => prev + chunk);
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      setError(err instanceof Error ? err.message : "An unknown error occurred.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Component rendering...
-}
+```bash
+cd ai
 ```
 
-### Server Action Implementation
+2. Create and activate a virtual environment, install deps, and run:
 
-```typescript
-// app/actions/ai.ts (test implementation)
-'use server'
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
 
-import OpenAI from 'openai';
+3. Health check:
 
-const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    "X-Title": "P.R.A.N. - Public Reputation and Analysis Node",
-  },
+```bash
+curl http://localhost:8000/v1/health
+```
+
+How the Next.js app should call the microservice
+
+- Option A — Server-side (recommended): create a server action or API route that forwards requests to the microservice using `AI_SERVICE_URL` (set in your Next app `.env`). This keeps API keys and model credentials isolated in the microservice environment.
+- Option B — Client-side: call the microservice directly from the browser (less secure unless you proxy through Next.js).
+
+Example (fetching a synchronous completion from the microservice):
+
+```js
+const res = await fetch(`${process.env.AI_SERVICE_URL}/v1/completions`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt: 'Explain online reputation', max_tokens: 128, stream: false })
 });
-
-export async function getStreamingAiCompletion(userPrompt: string): Promise<ReadableStream<Uint8Array>> {
-  const messages = [
-    {
-      role: "system",
-      content: "You are a helpful assistant for online reputation management."
-    },
-    {
-      role: "user",
-      content: userPrompt
-    }
-  ];
-
-  const stream = await openai.chat.completions.create({
-    model: "google/gemma-3-27b-it:free", 
-    messages: messages,
-    stream: true, 
-  });
-
-  // Create and return ReadableStream...
-}
+const data = await res.json();
+console.log(data.text);
 ```
 
-## Next Steps
+Streaming usage
 
-Future development will focus on creating specialized AI functions for reputation analysis, sentiment analysis, and content suggestions.
+The microservice supports a streaming mode for incremental text delivery. If `stream=true` is set in the request body or query, the service returns a streaming response (SSE-style) that the frontend can read incrementally.
 
-## Working with the AI System
+Security and env vars
 
-The AI system is designed to work automatically. Developers should:
+- The microservice uses its own environment variables (see `ai/requirements.txt` and `ai/README.md`). Key variables used by the microservice include:
+  - `OPENAI_COMPAT_BASE_URL` (or `MODEL_ENDPOINT`) — optional base URL for an OpenAI-compatible endpoint
+  - `MODEL_API_KEY` — optional model API key
+  - `MODEL_NAME` — optional model name when using OpenAI-compatible clients
 
-1. Use the provided UI components
-2. Connect to the appropriate backend functions
-3. Handle and display the structured results
+- The Next.js application should set `AI_SERVICE_URL` in its `.env` (see `main/.env.example`) pointing at the microservice base URL.
 
-The system does not require users to manually craft prompts - the UI buttons and automated analysis pipeline will handle all interactions with the AI service.
+Testing
 
-## Best Practices
+- The microservice includes `ai/tests/test_main.py` (pytest) that validates `/v1/health` and `/v1/completions`. Run tests from `ai/` with `pytest` after installing dev dependencies.
 
-1. **Provide Clear Context**: Include specific metrics, content examples, and goals in the system prompts
+Notes and rationale
 
-2. **Use Consistent Framing**: For recurring analyses, use the same prompt structure to ensure comparable results
+- Moving AI work to a separate FastAPI microservice keeps model credentials and streaming logic isolated from the frontend codebase. It also makes it easy to swap model providers and run GPU-enabled servers separately.
+- The Next.js app should be updated to call this microservice (either directly or via a server-side proxy). The previous in-app test page was updated to point at the microservice; the recommended pattern is to proxy requests server-side so that model credentials and provider configuration remain inside the microservice's environment.
 
-3. **Review AI Outputs**: Always review AI-generated content before publication to ensure accuracy and brand alignment
-
-4. **Ethical Considerations**: Do not use AI to generate deceptive content or manipulate metrics
-
-5. **Privacy Guidelines**: Do not submit private user data to the AI service that could violate privacy regulations
-
-## Limitations
-
-1. The AI does not have real-time access to your social media accounts
-
-2. Analysis is based on information you provide, not direct API access to platforms
-
-3. The AI does not store conversation history between sessions
-
-4. Complex multi-part analyses may need to be broken into separate prompts
-
-## Future Enhancements
-
-In upcoming releases, we plan to enhance AI integration with:
-
-1. Direct API connections to social platforms for real-time analysis
-2. Custom-trained models specific to reputation management
-3. Scheduled automated reports and alerts
-4. Visual content analysis capabilities
-5. Competitive analysis features
+See `ai/README.md` for more details about microservice configuration and deployment.
 
 ---
 
-Last updated: May 19, 2025
+Last updated: October 26, 2025

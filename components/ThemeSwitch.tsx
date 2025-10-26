@@ -6,7 +6,7 @@ import { FiSun, FiMoon, FiMonitor } from 'react-icons/fi'
 
 export default function ThemeSwitch() {
     const [mounted, setMounted] = useState(false)
-    const { theme, setTheme, resolvedTheme } = useTheme() // Get 'theme' to check for 'system' explicitly
+    const { theme, setTheme } = useTheme() // Get 'theme' to check for 'system' explicitly
 
     useEffect(() => {
         setMounted(true)

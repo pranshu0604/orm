@@ -10,7 +10,7 @@ PRAN is in early development with the following features implemented:
 - Platform connections for Twitter/X and GitHub
 - Database schema and migrations
 - Redis integration for caching
-- Basic AI integration test with OpenRouter
+ - Basic AI microservice (FastAPI) integration
 - Twitter/X data access via Nitter (in development)
 
 ## Key Features
@@ -43,7 +43,7 @@ PRAN is in early development with the following features implemented:
 ### Backend & Data
 - Prisma ORM with PostgreSQL
 - Upstash Redis for caching
-- OpenRouter API for AI testing
+ - FastAPI-based AI microservice (see `../ai`) for AI testing
 - Playwright for browser automation (in development)
 
 ## Getting Started
