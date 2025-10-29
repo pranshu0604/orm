@@ -3,6 +3,7 @@ import GitHubProvider from "next-auth/providers/github";
 import TwitterProvider from "next-auth/providers/twitter";
 import { PlatformType } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/clerk-sdk-node";
 import { encryptToken } from "@/lib/encryption";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -130,10 +131,26 @@ const authOptions: AuthOptions = {
 
       logger.info(`Clerk authentication successful, userId: ${clerkId}`);
 
-      const dbUser = await prisma.user.findUnique({ where: { clerkId } });
+      let dbUser = await prisma.user.findUnique({ where: { clerkId } });
       if (!dbUser) {
-        logger.error(`NextAuth signIn: DB User not found for Clerk ID: ${clerkId}. Sync issue?`);
-        return '/settings/connections?error=db_user_not_found';
+        logger.info(`DB user not found for Clerk ID ${clerkId}. Attempting automatic sync/upsert from Clerk.`);
+        try {
+          const clerkUser = await clerkClient.users.getUser(clerkId);
+          const email: string = clerkUser.emailAddresses?.[0]?.emailAddress || "";
+          const name: string = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ");
+          const image: string = clerkUser.imageUrl || "";
+
+          dbUser = await prisma.user.upsert({
+            where: { clerkId },
+            update: { email, name, image },
+            create: { clerkId, email, name, image },
+          });
+
+          logger.info(`Successfully upserted DB user for Clerk ID ${clerkId}`, { userId: dbUser.id });
+        } catch (err) {
+          logger.error(`Automatic sync failed for Clerk ID ${clerkId}:`, err);
+          return '/settings/connections?error=db_user_not_found';
+        }
       }
 
       logger.info(`Found database user: ${dbUser.id}`);
