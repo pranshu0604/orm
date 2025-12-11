@@ -1,0 +1,6 @@
+{
+  "prisma.schema": "${workspaceFolder}/prisma/schema.prisma",
+  "files.exclude": {
+    "**/.prisma": true
+  }
+}

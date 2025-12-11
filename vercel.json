@@ -1,0 +1,32 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "outputDirectory": ".next",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@next_public_clerk_publishable_key",
+      "CLERK_SECRET_KEY": "@clerk_secret_key",
+      "DATABASE_URL": "@database_url",
+      "DIRECT_DATABASE_URL": "@direct_database_url",
+      "AI_SERVICE_URL": "@ai_service_url",
+      "GITHUB_CLIENT_ID": "@github_client_id",
+      "GITHUB_CLIENT_SECRET": "@github_client_secret",
+      "GITHUB_TOKEN": "@github_token",
+      "GITHUB_PAT": "@github_pat",
+      "TWITTER_API_KEY": "@twitter_api_key",
+      "TWITTER_API_SECRET": "@twitter_api_secret",
+      "ENCRYPTION_SECRET_KEY": "@encryption_secret_key",
+      "NEXTAUTH_URL": "@nextauth_url",
+      "NEXTAUTH_SECRET": "@nextauth_secret",
+      "UPSTASH_REDIS_REST_URL": "@upstash_redis_rest_url",
+      "UPSTASH_REDIS_REST_TOKEN": "@upstash_redis_rest_token",
+      "CLERK_WEBHOOK_SECRET": "@clerk_webhook_secret",
+      "RESEND_API_KEY": "@resend_api_key"
+    }
+  }
+}
