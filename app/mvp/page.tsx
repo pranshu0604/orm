@@ -1,27 +1,7 @@
 'use client';
 
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-
-// Loading placeholder for 3D phone
-function PhoneLoadingPlaceholder() {
-  return (
-    <div className="w-72 h-[500px] md:w-96 md:h-[600px] flex items-center justify-center">
-      <motion.div
-        className="w-48 h-96 rounded-[3rem] bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-white/10"
-        animate={{ opacity: [0.5, 1, 0.5], scale: [0.95, 1, 0.95] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      />
-    </div>
-  );
-}
-
-// Dynamically import iPhone3D to avoid SSR issues with Three.js
-const IPhone3DScene = dynamic(() => import('@/components/iPhone3D'), {
-  ssr: false,
-  loading: () => <PhoneLoadingPlaceholder />,
-});
 
 // Floating particle component with Framer Motion
 function Particle({ delay, size, left, duration }: { delay: number; size: number; left: string; duration: number }) {
@@ -152,8 +132,9 @@ export default function Home() {
       {/* Animated grid background */}
       <motion.div
         className="absolute inset-0 grid-bg"
-        animate={{ opacity: [0.03, 0.08, 0.03] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ opacity: 0.08 }}
+        animate={mounted ? { opacity: [0.08, 0.15, 0.08] } : {}}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
       />
 
       {/* Gradient overlays */}
@@ -187,10 +168,10 @@ export default function Home() {
       {/* Main content */}
       <main className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-32">
         {/* Hero Section */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-8 min-h-[80vh]">
-          {/* Left: Text content */}
+        <div className="flex flex-col items-center justify-center gap-16 min-h-[80vh]">
+          {/* Text content - centered */}
           <motion.div
-            className="flex-1 max-w-2xl"
+            className="flex-1 max-w-4xl text-center"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
@@ -233,14 +214,14 @@ export default function Home() {
 
             {/* Subtext */}
             <motion.p
-              className="text-lg md:text-xl text-gray-400 leading-relaxed mb-10 max-w-xl"
+              className="text-lg md:text-xl text-gray-400 leading-relaxed mb-10 max-w-2xl mx-auto"
               variants={itemVariants}
             >
               AI-driven reputation intelligence that keeps you ahead. Monitor, analyze, and optimize your digital presence with surgical precision.
             </motion.p>
 
             {/* CTA Buttons */}
-            <motion.div className="flex flex-col sm:flex-row gap-4" variants={itemVariants}>
+            <motion.div className="flex flex-col sm:flex-row gap-4 justify-center" variants={itemVariants}>
               <motion.a
                 href="/dashboard"
                 className="btn-premium group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-semibold text-white"
@@ -282,7 +263,7 @@ export default function Home() {
               variants={itemVariants}
             >
               <p className="text-xs text-gray-500 uppercase tracking-widest mb-4">Trusted by elite operators</p>
-              <div className="flex items-center gap-8 text-gray-400">
+              <div className="flex items-center justify-center gap-8 text-gray-400">
                 <span className="font-semibold"><AnimatedCounter value={10} suffix="K+" /></span>
                 <span className="text-gray-700">|</span>
                 <span className="font-semibold"><AnimatedCounter value={99} suffix=".9% Uptime" /></span>
@@ -290,16 +271,6 @@ export default function Home() {
                 <span className="font-semibold">Real-time</span>
               </div>
             </motion.div>
-          </motion.div>
-
-          {/* Right: 3D iPhone visualization */}
-          <motion.div
-            className="flex-1 flex justify-center lg:justify-end"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            <IPhone3DScene />
           </motion.div>
         </div>
 

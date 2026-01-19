@@ -195,8 +195,9 @@ export default function WaitlistPage() {
       {/* Animated grid background */}
       <motion.div
         className="absolute inset-0 grid-bg"
-        animate={{ opacity: [0.03, 0.08, 0.03] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ opacity: 0.08 }}
+        animate={mounted ? { opacity: [0.08, 0.15, 0.08] } : {}}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', repeatType: 'loop' }}
       />
 
       {/* Gradient overlays */}
