@@ -5,6 +5,12 @@
  */
 
 const { chromium } = require('playwright');
+
+// Polyfill fetch for Node.js if not available
+if (!globalThis.fetch) {
+  globalThis.fetch = require('node-fetch');
+}
+
 const { Redis } = require('@upstash/redis');
 
 const CACHE_KEY = 'nitter:base_url';
@@ -161,14 +167,24 @@ async function main() {
     
     // Cache it in Redis
     console.log(`\n💾 Caching ${workingInstance} in Redis...`);
-    await redis.set(CACHE_KEY, workingInstance, { ex: CACHE_TTL_SECONDS });
+    try {
+      await redis.set(CACHE_KEY, workingInstance, { ex: CACHE_TTL_SECONDS });
+      console.log(`   ✅ Successfully cached to Redis`);
+    } catch (redisError) {
+      console.error(`   ⚠️  Redis cache failed: ${redisError.message}`);
+      console.error(`   Continuing anyway - instance was found: ${workingInstance}`);
+    }
     
     console.log(`\n✅ Successfully updated Nitter instance cache!`);
     console.log(`   Active instance: ${workingInstance}`);
     console.log(`   Cache TTL: ${CACHE_TTL_SECONDS / 3600} hours`);
     
   } catch (error) {
-    console.error('\n❌ Failed to update Nitter instances:', error.message);
+    console.error('\n❌ Failed to update Nitter instances:');
+    console.error(`   Error: ${error.message}`);
+    if (error.stack) {
+      console.error(`   Stack: ${error.stack}`);
+    }
     process.exit(1);
   }
 }
