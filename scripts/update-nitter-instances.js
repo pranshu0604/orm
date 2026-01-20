@@ -168,12 +168,13 @@ async function main() {
     // Cache it in Redis
     console.log(`\n💾 Caching ${workingInstance} in Redis...`);
     try {
-      await redis.set(CACHE_KEY, workingInstance, { ex: CACHE_TTL_SECONDS });
-      console.log(`   ✅ Successfully cached to Redis`);
-    } catch (redisError) {
-      console.error(`   ⚠️  Redis cache failed: ${redisError.message}`);
-      console.error(`   Continuing anyway - instance was found: ${workingInstance}`);
-    }
+    console.log(`   Debug: Redis URL configured: ${!!process.env.UPSTASH_REDIS_REST_URL}`);
+    console.log(`   Debug: Redis Token configured: ${!!process.env.UPSTASH_REDIS_REST_TOKEN}`);
+    await redis.set(CACHE_KEY, workingInstance, { ex: CACHE_TTL_SECONDS });
+    console.log(`   ✅ Successfully cached to Redis`);
+  } catch (redisError) {
+    console.error(`   ⚠️  Redis cache failed: ${redisError.message}`);
+    console.error(`   Error stack: ${redisError.stack}`);
     
     console.log(`\n✅ Successfully updated Nitter instance cache!`);
     console.log(`   Active instance: ${workingInstance}`);
