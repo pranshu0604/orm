@@ -1,8 +1,4 @@
-/**
- * Update Nitter Instances Script
- * This script runs periodically via GitHub Actions to update the cached list of working Nitter instances.
- * It tests instances and caches the best working one in Redis.
- */
+// Runs periodically via GitHub Actions to find a working Nitter instance and cache it in Redis.
 
 const { chromium } = require('playwright');
 
@@ -96,21 +92,23 @@ async function getAllHealthyInstances() {
     await page.waitForSelector('table tr', { timeout: 5000 });
     
     const instances = await page.evaluate(() => {
+      // status.d420.de columns: [0] domain, [1] region, [2] up-flag, [3] history,
+      // [4] response time, [5] uptime %, [6] search-works flag, [7] version, [8] connectivity, [9] score.
       const rows = Array.from(document.querySelectorAll('table tr')).slice(1);
       const valid = [];
-      
+
       for (const row of rows) {
         const tds = row.querySelectorAll('td');
         const instance = tds[0]?.textContent?.trim() ?? '';
-        const healthy = tds[2]?.textContent?.trim();
-        const uptimeStr = tds[4]?.textContent?.trim() ?? '0%';
+        const searchWorks = tds[6]?.textContent?.trim();
+        const uptimeStr = tds[5]?.textContent?.trim() ?? '0%';
         const uptime = parseInt(uptimeStr.replace('%', ''), 10) || 0;
-        
-        if (healthy === '✅' && uptime >= 80) {
+
+        if (searchWorks === '✅' && uptime >= 80) {
           valid.push({ url: `https://${instance}`, uptime });
         }
       }
-      
+
       valid.sort((a, b) => b.uptime - a.uptime);
       return valid;
     });

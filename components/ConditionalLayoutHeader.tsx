@@ -6,8 +6,8 @@ import LayoutHeader from './LayoutHeader'
 export default function ConditionalLayoutHeader() {
   const pathname = usePathname()
 
-  // Don't show LayoutHeader on the homepage (waitlist page)
-  if (pathname === '/') {
+  // Don't show LayoutHeader on the focused onboarding wizard
+  if (pathname.startsWith('/onboarding')) {
     return null
   }
 

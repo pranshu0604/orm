@@ -40,7 +40,7 @@ model PlatformConnection {
   profileId    String // Platform's unique user ID (essential)
   username     String? // Store username fetched during connection (optional)
   accessToken  String? // Encrypted, store only if needed for future API calls
-  refreshToken String? // Encrypted, store only if needed (e.g., GitHub for specific actions)
+  refreshToken String? // Encrypted, store only if needed for future API calls
   scopes       String? // Scopes granted during OAuth
   expiresAt    DateTime? // Access token expiry time (less relevant if not using token)
   connectedAt  DateTime     @default(now())
@@ -50,6 +50,8 @@ model PlatformConnection {
   platformAspiration String? // Detailed info for this platform
   targetTier         TargetTier @default(BEGINNER)
   setupCompleted     Boolean    @default(false)
+  lastDigestAt       DateTime? // Last time a "notable activity" digest email was sent for this connection
+  lastScrapedAt      DateTime? // Last time a scrape run completed for this connection
 
   // Relations
   posts       Post[]
@@ -61,7 +63,6 @@ model PlatformConnection {
 
 enum PlatformType {
   X
-  GITHUB
   // add linkedin and insta later
 }
 
@@ -205,9 +206,6 @@ enum SuggestionType {
   VOLUME
   FOLLOWING
   REPLY
-  COMMIT
-  PR
-  ISSUE
 }
 
 enum UsageType {

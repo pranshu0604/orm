@@ -297,6 +297,32 @@
   background: rgba(139, 92, 246, 0.5);
 }
 
+/* HUD/terminal form controls, shared by onboarding, connections, and dashboard */
+.hud-input {
+  width: 100%;
+  background: #030712;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
+  color: #f9fafb;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
+}
+
+.hud-input::placeholder {
+  color: rgba(107, 114, 128, 0.8);
+}
+
+.hud-input:focus {
+  outline: none;
+  border-color: rgba(34, 211, 238, 0.4);
+}
+
+.hud-input-sm {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
 /* Selection styling */
 ::selection {
   background: rgba(139, 92, 246, 0.3);

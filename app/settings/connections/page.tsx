@@ -1,28 +1,80 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '@clerk/nextjs';
 import { signIn } from 'next-auth/react';
-import { PlatformType } from '@prisma/client';
+import { PlatformType, TargetTier } from '@prisma/client';
 import { getPlatformConnectionsAction, disconnectPlatformAction } from '@/app/actions/platformActions';
+import { savePlatformSetupAction } from '@/app/actions/onboardingActions';
+import HudBackground from '@/components/hud/HudBackground';
+import CornerBrackets from '@/components/hud/CornerBrackets';
+import StatusDots from '@/components/hud/StatusDots';
+import TerminalButton from '@/components/hud/TerminalButton';
 
-// Type for the connection data received from the server action
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  OAuthCallback: 'The provider rejected the connection request. This usually means the callback URL registered with the provider doesn\'t match this app, or the API credentials are invalid.',
+  OAuthSignin: 'Could not start the connection request with the provider.',
+  db_user_not_found: 'Could not find your account. Try refreshing and reconnecting.',
+  db_error: 'Failed to save the connection. Try again.',
+  missing_profile_id: 'The provider didn\'t return a usable profile ID.',
+  unsupported_provider: 'That provider isn\'t supported.',
+  rate_limited: 'Too many connection attempts. Please wait a bit and try again.',
+};
+
 type ConnectionInfo = {
   platform: PlatformType;
   connectedAt: Date;
   profileId: string | null;
-  username: string | null; // Include username from connection
+  username: string | null;
+  setupCompleted: boolean;
+  platformRole: string | null;
+  platformAspiration: string | null;
+  targetTier: TargetTier;
 };
+
+const TARGET_TIERS: { value: TargetTier; label: string }[] = [
+  { value: 'BEGINNER', label: 'Beginner' },
+  { value: 'INTERMEDIATE', label: 'Intermediate' },
+  { value: 'ADVANCED', label: 'Advanced' },
+  { value: 'EXPERT', label: 'Expert' },
+];
+
+const PLATFORM_META: Record<PlatformType, { label: string; glyph: string; accent: 'cyan' }> = {
+  X: { label: 'X (Twitter)', glyph: 'X', accent: 'cyan' },
+};
+
+const ACCENT_TEXT = { cyan: 'text-cyan-400' } as const;
+const ACCENT_BORDER = { cyan: 'border-cyan-500/30' } as const;
 
 export default function ConnectionsPage() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [connections, setConnections] = useState<ConnectionInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false); // For connect/disconnect actions
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Function to fetch connections (memoized to satisfy hook dependency rules)
+  // Surface OAuth redirect outcomes (NextAuth's error/success come back as query params,
+  // not thrown errors, so they were previously silently ignored).
+  useEffect(() => {
+    const errorCode = searchParams.get('error');
+    const didSucceed = searchParams.get('success');
+    if (errorCode) {
+      setError(OAUTH_ERROR_MESSAGES[errorCode] || `Connection failed (${errorCode}).`);
+    } else if (didSucceed) {
+      setSuccess('Connected successfully.');
+    }
+    if (errorCode || didSucceed) {
+      router.replace(pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fetchData = useCallback(async () => {
     if (!clerkUser) return;
     setIsLoading(true);
@@ -38,119 +90,266 @@ export default function ConnectionsPage() {
     }
   }, [clerkUser]);
 
-  // Fetch data on load and when Clerk user is available
   useEffect(() => {
     if (isClerkLoaded && clerkUser) {
       fetchData();
     }
     if (isClerkLoaded && !clerkUser) {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }, [isClerkLoaded, fetchData, clerkUser]);
 
-   // Get display info for a connected platform
-   const getConnectionInfo = (platform: PlatformType): ConnectionInfo | undefined => {
+  const getConnectionInfo = (platform: PlatformType): ConnectionInfo | undefined => {
     return connections.find((conn) => conn.platform === platform);
   };
 
-  // Handle connection click - uses NextAuth's signIn
-  const handleConnect = (providerId: 'github' | 'twitter') => {
+  const handleConnect = () => {
     if (isSaving) return;
     setError(null);
     setSuccess(null);
     setIsSaving(true);
-    signIn(providerId)
-      .catch(err => {
-        console.error("Sign in initiation error", err);
-        setError(`Failed to initiate connection with ${providerId}.`);
+    signIn('twitter')
+      .catch((err) => {
+        console.error('Sign in initiation error', err);
+        setError('Failed to initiate connection with twitter.');
       })
       .finally(() => {
-         // Consider managing loading state based on page navigation or query params.
-         setIsSaving(false);
+        setIsSaving(false);
       });
   };
 
-  // Handle disconnect
   const handleDisconnect = async (platform: PlatformType) => {
-      if (isSaving) return;
-      setIsSaving(true);
-      setError(null);
-      setSuccess(null);
-      try {
-          const result = await disconnectPlatformAction(platform);
-          if (result.success) {
-              setSuccess(`${platform} disconnected successfully.`);
-              await fetchData(); // Refetch connections to update UI
-          } else {
-              setError(result.error || `Failed to disconnect ${platform}.`);
-          }
-      } catch (err) {
-          setError(`An unexpected error occurred while disconnecting ${platform}.`);
-          console.error(err);
-      } finally {
-          setIsSaving(false);
+    if (isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await disconnectPlatformAction(platform);
+      if (result.success) {
+        setSuccess(`${platform} disconnected successfully.`);
+        await fetchData();
+      } else {
+        setError(result.error || `Failed to disconnect ${platform}.`);
       }
+    } catch (err) {
+      setError(`An unexpected error occurred while disconnecting ${platform}.`);
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-
   if (isLoading) {
-    return <div className="container mx-auto p-4 max-w-2xl text-center">Loading connections...</div>;
+    return (
+      <HudBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex items-center gap-3 font-mono text-sm text-gray-500">
+            <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }}>
+              &gt;
+            </motion.span>
+            Loading connections...
+          </div>
+        </div>
+      </HudBackground>
+    );
   }
 
   if (!clerkUser) {
-    return <div className="container mx-auto p-4 max-w-2xl">Please sign in to manage connections.</div>;
+    return (
+      <HudBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="font-mono text-sm text-gray-500">Please sign in to manage connections.</p>
+        </div>
+      </HudBackground>
+    );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Manage Connections</h1>
+    <HudBackground>
+      <div className="max-w-3xl mx-auto px-6 pt-32 pb-24">
+        {/* Page header */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-mono text-xs text-cyan-400/80">{'//'}</span>
+            <span className="font-mono text-xs text-gray-500 tracking-widest uppercase">Settings</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-mono font-bold text-white tracking-tight">
+            Connections
+          </h1>
+          <p className="mt-2 text-sm text-gray-400 font-light">
+            Link the platforms P.R.A.N. monitors and analyzes on your behalf.
+          </p>
+        </div>
 
-      {error && <p className="text-red-500 mb-4 p-3 bg-red-100 dark:bg-red-900 dark:text-red-200 rounded">Error: {error}</p>}
-      {success && <p className="text-green-500 mb-4 p-3 bg-green-100 dark:bg-green-900 dark:text-green-200 rounded">{success}</p>}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 border-l-2 border-red-500/60 bg-red-500/5 px-4 py-3 font-mono text-xs text-red-300"
+            >
+              ERROR {'//'} {error}
+            </motion.div>
+          )}
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 border-l-2 border-emerald-500/60 bg-emerald-500/5 px-4 py-3 font-mono text-xs text-emerald-300"
+            >
+              &gt; {success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Platform Connections List */}
-      <div className="space-y-4">
-        {[PlatformType.GITHUB, PlatformType.X].map((platform) => {
-          const connection = getConnectionInfo(platform);
-          const providerId = platform === PlatformType.GITHUB ? 'github' : 'twitter';
-          const platformName = platform === PlatformType.X ? 'X (Twitter)' : platform;
+        {/* Platform Connections List */}
+        <div className="space-y-6">
+          {[PlatformType.X].map((platform) => {
+            const connection = getConnectionInfo(platform);
+            const meta = PLATFORM_META[platform];
 
-          return (
-            <div key={platform} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div>
-                 <span className="font-medium text-gray-700 dark:text-gray-300">{platformName}</span>
-                 {connection && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Connected as: {connection.username || connection.profileId} (ID: {connection.profileId})
-                        <br/>
-                        On: {new Date(connection.connectedAt).toLocaleDateString()}
-                    </p>
-                 )}
-              </div>
-              <div className="mt-2 sm:mt-0">
+            return (
+              <div key={platform} className="relative bg-[#0a0f1e]/60 backdrop-blur-sm border border-blue-500/20">
+                <CornerBrackets accent="cyan" size={3} thickness={2} />
+
+                {/* Status bar */}
+                <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-blue-500/10">
+                  <div className="flex items-center gap-2">
+                    <StatusDots />
+                    <span className="font-mono text-[10px] text-gray-500 tracking-wider uppercase">
+                      MODULE_{meta.glyph}
+                    </span>
+                  </div>
+                  <span
+                    className={`font-mono text-[10px] tracking-widest uppercase ${
+                      connection ? 'text-emerald-400' : 'text-gray-600'
+                    }`}
+                  >
+                    {connection ? 'Linked' : 'Not Linked'}
+                  </span>
+                </div>
+
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`w-11 h-11 border ${ACCENT_BORDER[meta.accent]} flex items-center justify-center bg-gradient-to-br from-white/5 to-transparent shrink-0`}
+                    >
+                      <span className={`font-mono text-sm font-bold ${ACCENT_TEXT[meta.accent]}`}>
+                        {meta.glyph}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-mono font-semibold text-white text-sm tracking-tight">
+                        {meta.label}
+                      </span>
+                      {connection ? (
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">
+                          @{connection.username || connection.profileId}
+                          <span className="text-gray-700 mx-1.5">|</span>
+                          linked {new Date(connection.connectedAt).toLocaleDateString()}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-600 font-mono mt-0.5">
+                          <span className="text-gray-700 mr-1">&gt;</span>awaiting connection
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
                   {connection ? (
-                    <button
+                    <TerminalButton
+                      variant="danger"
                       onClick={() => handleDisconnect(platform)}
-                      className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50"
                       disabled={isSaving}
+                      className="shrink-0"
                     >
-                      {isSaving ? 'Working...' : 'Disconnect'}
-                    </button>
+                      Disconnect
+                    </TerminalButton>
                   ) : (
-                    <button
-                      onClick={() => handleConnect(providerId)}
-                      className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+                    <TerminalButton
+                      variant="primary"
+                      onClick={handleConnect}
                       disabled={isSaving}
+                      className="shrink-0"
                     >
-                      {isSaving ? 'Working...' : 'Connect'}
-                    </button>
+                      Connect
+                    </TerminalButton>
                   )}
+                </div>
+
+                {connection && !connection.setupCompleted && (
+                  <div className="px-5 pb-5">
+                    <PlatformSetupForm platform={platform} connection={connection} onSaved={fetchData} />
+                  </div>
+                )}
               </div>
-            </div>
-          );
-        })}
-        {/* Add LinkedIn similarly */}
+            );
+          })}
+        </div>
       </div>
+    </HudBackground>
+  );
+}
+
+function PlatformSetupForm({
+  platform,
+  connection,
+  onSaved,
+}: {
+  platform: PlatformType;
+  connection: ConnectionInfo;
+  onSaved: () => void;
+}) {
+  const [platformRole, setPlatformRole] = useState(connection.platformRole || '');
+  const [platformAspiration, setPlatformAspiration] = useState(connection.platformAspiration || '');
+  const [targetTier, setTargetTier] = useState<TargetTier>(connection.targetTier);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    await savePlatformSetupAction(platform, { platformRole, platformAspiration, targetTier });
+    setIsSaving(false);
+    onSaved();
+  };
+
+  return (
+    <div className="border-t border-amber-500/10 pt-4 space-y-3">
+      <p className="font-mono text-[11px] text-amber-400/80">
+        <span className="mr-1.5">!</span>FINISH SETUP {'//'} required to enable reports for this platform
+      </p>
+      <input
+        value={platformRole}
+        onChange={(e) => setPlatformRole(e.target.value)}
+        placeholder="role (e.g. builder)"
+        className="w-full px-3 py-2.5 bg-[#030712] border border-white/10 focus:border-cyan-500/40 text-white font-mono text-sm placeholder-gray-600 focus:outline-none transition-colors"
+      />
+      <input
+        value={platformAspiration}
+        onChange={(e) => setPlatformAspiration(e.target.value)}
+        placeholder="goal on this platform"
+        className="w-full px-3 py-2.5 bg-[#030712] border border-white/10 focus:border-cyan-500/40 text-white font-mono text-sm placeholder-gray-600 focus:outline-none transition-colors"
+      />
+      <select
+        value={targetTier}
+        onChange={(e) => setTargetTier(e.target.value as TargetTier)}
+        className="w-full px-3 py-2.5 bg-[#030712] border border-white/10 focus:border-cyan-500/40 text-white font-mono text-sm focus:outline-none transition-colors"
+      >
+        {TARGET_TIERS.map((t) => (
+          <option key={t.value} value={t.value}>
+            Target: {t.label}
+          </option>
+        ))}
+      </select>
+      <TerminalButton
+        onClick={handleSave}
+        disabled={isSaving || !platformRole || !platformAspiration}
+        loading={isSaving}
+        className="w-full sm:w-auto"
+      >
+        Save
+      </TerminalButton>
     </div>
   );
 }

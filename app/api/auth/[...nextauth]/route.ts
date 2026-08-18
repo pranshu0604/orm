@@ -1,5 +1,4 @@
 import NextAuth, { AuthOptions, Profile, Account, User } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
 import TwitterProvider from "next-auth/providers/twitter";
 import { PlatformType } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
@@ -7,13 +6,21 @@ import { clerkClient } from "@clerk/clerk-sdk-node";
 import { encryptToken } from "@/lib/encryption";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { publicActionLimiter, getClientIp } from "@/lib/rateLimit";
 
-// extend interfaces for expected custom profile structures
-interface GitHubProfile extends Profile {
-    id?: number;
-    login?: string;
+// signIn() callers set a callbackUrl cookie; use it to send onboarding-initiated
+// connections back to /onboarding instead of always landing on /settings/connections.
+async function getPostConnectRedirectBase(): Promise<string> {
+  const cookieStore = await cookies();
+  const callbackUrl =
+    cookieStore.get('next-auth.callback-url')?.value ||
+    cookieStore.get('__Secure-next-auth.callback-url')?.value ||
+    '';
+  return callbackUrl.includes('/onboarding') ? '/onboarding' : '/settings/connections';
 }
 
+// extend interfaces for expected custom profile structures
 interface TwitterProfile extends Profile {
     data?: {
         id?: string;
@@ -42,11 +49,6 @@ const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
   providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      authorization: { params: { scope: "read:user user:email" } },
-    }),
     TwitterProvider({
       clientId: process.env.TWITTER_API_KEY!,
       clientSecret: process.env.TWITTER_API_SECRET!,
@@ -96,7 +98,20 @@ const authOptions: AuthOptions = {
         url: "https://api.twitter.com/2/users/me",
         params: {
           "user.fields": "profile_image_url,name,username"
-        }
+        },
+        async request({ tokens }) {
+          const url = new URL("https://api.twitter.com/2/users/me");
+          url.searchParams.set("user.fields", "profile_image_url,name,username");
+          const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
+          });
+          const body = await res.text();
+          if (!res.ok) {
+            logger.error(`Twitter userinfo error (${res.status}):`, body);
+            throw new Error(`Twitter userinfo request failed: ${res.status} ${body}`);
+          }
+          return JSON.parse(body);
+        },
       },
       profile(profile) {
         return {
@@ -109,16 +124,18 @@ const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile | GitHubProfile | TwitterProfile }) {
-      logger.info(`SignIn callback started for provider: ${account?.provider}`, { 
-        userId: user?.id, 
+    async signIn({ user, account, profile }: { user: User, account: Account | null, profile?: Profile | TwitterProfile }) {
+      logger.info(`SignIn callback started for provider: ${account?.provider}`, {
+        userId: user?.id,
         accountId: account?.providerAccountId,
-        hasProfile: !!profile 
+        hasProfile: !!profile
       });
-      
+
+      const redirectBase = await getPostConnectRedirectBase();
+
       if (!account || !profile) {
         logger.error("NextAuth signIn: Missing account or profile info.");
-        return '/settings/connections?error=provider_data_missing';
+        return redirectBase + '?error=provider_data_missing';
       }
 
       const authData = await auth();
@@ -149,46 +166,30 @@ const authOptions: AuthOptions = {
           logger.info(`Successfully upserted DB user for Clerk ID ${clerkId}`, { userId: dbUser.id });
         } catch (err) {
           logger.error(`Automatic sync failed for Clerk ID ${clerkId}:`, err);
-          return '/settings/connections?error=db_user_not_found';
+          return redirectBase + '?error=db_user_not_found';
         }
       }
 
       logger.info(`Found database user: ${dbUser.id}`);
 
-      let platform: PlatformType;
-      let platformProfileId: string | undefined;
-      let platformUsername: string | undefined;
-  const scopes = account.scope || '';
-
-      switch (account.provider) {
-        case "github":
-          const ghProfile = profile as GitHubProfile;
-          platform = PlatformType.GITHUB;
-          if (!ghProfile.id && !account.providerAccountId) {
-            logger.error("Missing GitHub profile ID", { profile: ghProfile });
-            return '/settings/connections?error=missing_profile_id';
-          }
-          platformProfileId = ghProfile.id?.toString() ?? account.providerAccountId;
-          platformUsername = ghProfile.login;
-          break;
-        case "twitter":
-          const twProfile = profile as TwitterProfile;
-          platform = PlatformType.X;
-          if (!twProfile.data?.id && !account.providerAccountId) {
-            logger.error("Missing Twitter profile ID", { profile: twProfile });
-            return '/settings/connections?error=missing_profile_id';
-          }
-          platformProfileId = twProfile.data?.id?.toString() ?? account.providerAccountId;
-          platformUsername = twProfile.data?.username;
-          break;
-        default:
-          logger.error(`NextAuth signIn: Unsupported provider: ${account.provider}`);
-          return '/settings/connections?error=unsupported_provider';
+      if (account.provider !== "twitter") {
+        logger.error(`NextAuth signIn: Unsupported provider: ${account.provider}`);
+        return redirectBase + '?error=unsupported_provider';
       }
+
+      const twProfile = profile as TwitterProfile;
+      const platform: PlatformType = PlatformType.X;
+      const scopes = account.scope || '';
+      if (!twProfile.data?.id && !account.providerAccountId) {
+        logger.error("Missing Twitter profile ID", { profile: twProfile });
+        return redirectBase + '?error=missing_profile_id';
+      }
+      const platformProfileId = twProfile.data?.id?.toString() ?? account.providerAccountId;
+      const platformUsername = twProfile.data?.username;
 
       if (!platformProfileId) {
           logger.error(`NextAuth signIn: Could not determine profile ID for ${account.provider}`);
-          return '/settings/connections?error=profile_id_missing';
+          return redirectBase + '?error=profile_id_missing';
       }
 
       const expiresAt = account.expires_at ? new Date(account.expires_at * 1000) : null;
@@ -225,24 +226,23 @@ const authOptions: AuthOptions = {
           },
         });
 
-        return '/settings/connections?success=true';
+        return redirectBase + '?success=true';
 
       } catch (error: unknown) {
         logger.error(`NextAuth signIn: Error saving platform connection for ${platform}:`, error);
-        return '/settings/connections?error=db_error';
+        return redirectBase + '?error=db_error';
       }
     },
     async redirect({ url, baseUrl }) {
-      if (url.includes('/api/auth/callback/twitter')) {
-        return baseUrl + '/settings/connections';
-      }
       return url.startsWith(baseUrl) ? url : baseUrl;
     },
   },
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 }, // 30 days
   jwt: { maxAge: 30 * 24 * 60 * 60 }, // 30 days
   pages: {
-    signIn: '/sign-in',
+    // No dedicated /sign-in route exists (Clerk uses modal auth) — route NextAuth's
+    // own error/sign-in redirects to a real page instead of 404ing.
+    signIn: '/settings/connections',
     error: '/settings/connections',
   },
   logger: {
@@ -261,9 +261,21 @@ const authOptions: AuthOptions = {
 // Create the NextAuth handler
 const nextAuthHandler = NextAuth(authOptions);
 
+// Only the OAuth-initiating and callback legs are worth rate limiting — session/csrf/providers
+// reads happen on every page load and aren't an abuse vector.
+function isRateLimitedPath(pathname: string): boolean {
+  return pathname.includes('/api/auth/signin/') || pathname.includes('/api/auth/callback/');
+}
+
 // Simplified request handlers
 export async function GET(req: NextRequest, context: unknown) {
   try {
+    if (isRateLimitedPath(req.nextUrl.pathname)) {
+      const { success } = await publicActionLimiter.limit(getClientIp(req));
+      if (!success) {
+        return NextResponse.redirect(new URL('/settings/connections?error=rate_limited', req.url));
+      }
+    }
     const response = await nextAuthHandler(req, context);
     return response;
   } catch (error) {
@@ -274,6 +286,12 @@ export async function GET(req: NextRequest, context: unknown) {
 
 export async function POST(req: NextRequest, context: unknown) {
   try {
+    if (isRateLimitedPath(req.nextUrl.pathname)) {
+      const { success } = await publicActionLimiter.limit(getClientIp(req));
+      if (!success) {
+        return NextResponse.redirect(new URL('/settings/connections?error=rate_limited', req.url));
+      }
+    }
     const response = await nextAuthHandler(req, context);
     return response;
   } catch (error) {

@@ -31,28 +31,6 @@ export interface TwitterPerformanceReport {
   summary: string;
 }
 
-export interface GitHubMetrics {
-  total_commits: number;
-  total_prs: number;
-  total_issues: number;
-  total_stars: number;
-  total_forks: number;
-  follower_count: number;
-  following_count: number;
-  active_repos: number;
-  contribution_streak: number;
-}
-
-export interface GitHubPerformanceReport {
-  metrics: GitHubMetrics;
-  overall_score: number;
-  strengths: string[];
-  areas_for_improvement: string[];
-  top_languages: string[];
-  activity_pattern: string;
-  summary: string;
-}
-
 export interface TwitterBioSuggestion {
   suggested_bio: string;
   reasoning: string;
@@ -72,39 +50,6 @@ export interface TwitterContentSuggestions {
   engagement_strategy: string;
 }
 
-export interface GitHubBioSuggestion {
-  suggested_bio: string;
-  reasoning: string;
-}
-
-export interface CommitSuggestion {
-  focus_area: string;
-  specific_suggestion: string;
-  example: string;
-}
-
-export interface PRSuggestion {
-  focus_area: string;
-  specific_suggestion: string;
-  example: string;
-}
-
-export interface IssueSuggestion {
-  suggestion_type: 'create' | 'participate' | 'organize';
-  specific_suggestion: string;
-  impact: string;
-}
-
-export interface GitHubContentSuggestions {
-  bio_suggestion?: GitHubBioSuggestion;
-  commit_suggestions: CommitSuggestion[];
-  pr_suggestions: PRSuggestion[];
-  issue_suggestions: IssueSuggestion[];
-  accounts_to_follow: string[];
-  recommended_projects: string[];
-  growth_strategy: string;
-}
-
 export interface ReplySuggestion {
   original_tweet_context: string;
   suggested_reply: string;
@@ -118,7 +63,7 @@ export interface CustomPromptResponse {
 }
 
 export type TargetTier = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
-export type PlatformType = 'X' | 'GITHUB';
+export type PlatformType = 'X';
 
 class AIServiceClient {
   private baseUrl: string;
@@ -173,50 +118,6 @@ class AIServiceClient {
   }
 
   /**
-   * Generate GitHub performance report
-   */
-  async generateGitHubReport(params: {
-    userData: {
-      username: string;
-      bio?: string;
-      followers: number;
-      following: number;
-      public_repos: number;
-      total_commits: number;
-      total_prs: number;
-      total_issues: number;
-    };
-    reposData: Array<{
-      name: string;
-      description?: string;
-      stars: number;
-      language?: string;
-    }>;
-    targetTier: TargetTier;
-    previousReports?: string[];
-  }): Promise<GitHubPerformanceReport> {
-    const response = await fetch(`${this.baseUrl}/v1/reports/github`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_data: params.userData,
-        repos_data: params.reposData,
-        target_tier: params.targetTier,
-        previous_reports: params.previousReports,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(`AI Service Error: ${error.detail || response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  /**
    * Generate Twitter content suggestions
    */
   async generateTwitterSuggestions(params: {
@@ -231,42 +132,6 @@ class AIServiceClient {
     previousSuggestions?: string[];
   }): Promise<TwitterContentSuggestions> {
     const response = await fetch(`${this.baseUrl}/v1/suggestions/twitter`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_data: params.userData,
-        target_tier: params.targetTier,
-        based_on_report: params.basedOnReport,
-        custom_prompt: params.customPrompt,
-        previous_suggestions: params.previousSuggestions,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(`AI Service Error: ${error.detail || response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  /**
-   * Generate GitHub content suggestions
-   */
-  async generateGitHubSuggestions(params: {
-    userData: {
-      username: string;
-      bio?: string;
-      role_aspiration?: string;
-    };
-    targetTier: TargetTier;
-    basedOnReport?: string;
-    customPrompt?: string;
-    previousSuggestions?: string[];
-  }): Promise<GitHubContentSuggestions> {
-    const response = await fetch(`${this.baseUrl}/v1/suggestions/github`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,16 +1,8 @@
 import { isAlive } from './isAlive';
+import { KNOWN_NITTER_INSTANCES, NITTER_USER_AGENT } from './constants';
 
 const CACHE_KEY = 'nitter:base_url';
 const CACHE_TTL_SECONDS = 60 * 60 * 8; // 8 hours
-
-const KNOWN_INSTANCES: { url: string; uptime: number }[] = [
-  { url: 'https://nitter.net', uptime: 91 },
-  { url: 'https://nitter.space', uptime: 97 },
-  { url: 'https://nitter.privacyredirect.com', uptime: 96 },
-  { url: 'https://lightbrd.com', uptime: 95 },
-  { url: 'https://nitter.poast.org', uptime: 83 },
-  { url: 'https://xcancel.com', uptime: 99 },
-];
 
 async function getRedisClient() {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null;
@@ -46,39 +38,38 @@ async function updateCache(url: string): Promise<void> {
 }
 
 async function getAllHealthyInstances(): Promise<string[]> {
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      const playwright = await import('playwright');
-      const browser = await playwright.chromium.launch({ headless: true });
-      const context = await browser.newContext({
-        userAgent:
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-      });
-      const page = await context.newPage();
-      await page.goto('https://status.d420.de/', { timeout: 30000 });
-      await page.waitForSelector('table tr', { timeout: 5000 });
-      const instances = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('table tr')).slice(1);
-        const valid: { url: string; uptime: number }[] = [];
-        for (const row of rows) {
-          const tds = row.querySelectorAll('td');
-          const instance = tds[0]?.textContent?.trim() ?? '';
-          const healthy = tds[2]?.textContent?.trim();
-          const uptimeStr = tds[4]?.textContent?.trim() ?? '0%';
-          const uptime = parseInt(uptimeStr.replace('%', ''), 10) || 0;
-          if (healthy === '✅' && uptime >= 80) valid.push({ url: `https://${instance}`, uptime });
-        }
-        valid.sort((a, b) => b.uptime - a.uptime);
-        return valid.map(i => i.url);
-      });
-      await browser.close();
-      if (instances && instances.length) return instances;
-    } catch {
-      // fall back to known list
-    }
+  // Live-discover instances from the status page; the tweet-scraping path already
+  // depends on Playwright in every environment, so there's no reason to gate this to dev.
+  try {
+    const playwright = await import('playwright');
+    const browser = await playwright.chromium.launch({ headless: true });
+    const context = await browser.newContext({ userAgent: NITTER_USER_AGENT });
+    const page = await context.newPage();
+    await page.goto('https://status.d420.de/', { timeout: 30000 });
+    await page.waitForSelector('table tr', { timeout: 5000 });
+    const instances = await page.evaluate(() => {
+      // status.d420.de columns: [0] domain, [1] region, [2] up-flag, [3] history,
+      // [4] response time, [5] uptime %, [6] search-works flag, [7] version, [8] connectivity, [9] score.
+      const rows = Array.from(document.querySelectorAll('table tr')).slice(1);
+      const valid: { url: string; uptime: number }[] = [];
+      for (const row of rows) {
+        const tds = row.querySelectorAll('td');
+        const instance = tds[0]?.textContent?.trim() ?? '';
+        const searchWorks = tds[6]?.textContent?.trim();
+        const uptimeStr = tds[5]?.textContent?.trim() ?? '0%';
+        const uptime = parseInt(uptimeStr.replace('%', ''), 10) || 0;
+        if (searchWorks === '✅' && uptime >= 80) valid.push({ url: `https://${instance}`, uptime });
+      }
+      valid.sort((a, b) => b.uptime - a.uptime);
+      return valid.map(i => i.url);
+    });
+    await browser.close();
+    if (instances && instances.length) return instances;
+  } catch {
+    // fall back to known list
   }
 
-  return KNOWN_INSTANCES.filter(i => i.uptime >= 80).sort((a, b) => b.uptime - a.uptime).map(i => i.url);
+  return KNOWN_NITTER_INSTANCES.filter(i => i.uptime >= 80).sort((a, b) => b.uptime - a.uptime).map(i => i.url);
 }
 
 async function findWorkingNitter(instances?: string[]): Promise<string> {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { aiClient } from '@/lib/ai-client';
+import { hasCreditAvailable, recordUsage, recordFailedUsage } from '@/lib/credits';
+import { apiActionLimiter } from '@/lib/rateLimit';
 
 /**
  * POST /api/suggestions/twitter
@@ -18,6 +20,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const { success } = await apiActionLimiter.limit(userId);
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { platformConnectionId, basedOnReportId, customPrompt } = body;
 
@@ -29,17 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
-      include: {
-        usageHistory: {
-          where: {
-            usageType: 'CONTENT_SUGGESTION',
-            successful: true,
-          },
-        },
-      },
-    });
+    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
 
     if (!user) {
       return NextResponse.json(
@@ -57,19 +57,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Check credits
-    if (user.tier === 'FREE') {
-      const freeSuggestionsUsed = user.usageHistory.length;
-      const FREE_TIER_LIMIT = 20; // Different limit for suggestions
-
-      if (freeSuggestionsUsed >= FREE_TIER_LIMIT && user.creditsRemaining <= 0) {
-        return NextResponse.json(
-          { error: 'Credit limit reached. Please upgrade or purchase more credits.' },
-          { status: 403 }
-        );
-      }
-    } else if (user.creditsRemaining <= 0) {
+    const canProceed = await hasCreditAvailable(
+      user.id,
+      user.tier,
+      user.creditsRemaining,
+      'CONTENT_SUGGESTION'
+    );
+    if (!canProceed) {
       return NextResponse.json(
-        { error: 'No credits remaining. Please purchase more credits.' },
+        { error: 'Credit limit reached. Please upgrade or purchase more credits.' },
         { status: 403 }
       );
     }
@@ -141,15 +137,11 @@ export async function POST(req: NextRequest) {
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       // Log failed usage
-      await prisma.usageHistory.create({
-        data: {
-          userId: user.id,
-          usageType: customPrompt ? 'CUSTOM_PROMPT' : 'CONTENT_SUGGESTION',
-          creditsUsed: 0,
-          successful: false,
-          platformType: 'X',
-          errorMessage,
-        },
+      await recordFailedUsage({
+        userId: user.id,
+        usageType: customPrompt ? 'CUSTOM_PROMPT' : 'CONTENT_SUGGESTION',
+        platformType: 'X',
+        errorMessage,
       });
 
       throw error;
@@ -168,30 +160,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Log successful usage
-    const usageType = customPrompt ? 'CUSTOM_PROMPT' : 'CONTENT_SUGGESTION';
-    const creditsUsed = user.tier === 'PAID' ? 1 : 0;
-
-    await prisma.usageHistory.create({
-      data: {
+    // Log usage and atomically deduct credits if paid user. The suggestion is already
+    // generated at this point, so a lost credit race still needs a clean 403 + audit trail.
+    try {
+      await recordUsage({
         userId: user.id,
-        usageType,
-        creditsUsed,
-        successful: true,
+        tier: user.tier,
+        usageType: customPrompt ? 'CUSTOM_PROMPT' : 'CONTENT_SUGGESTION',
         platformType: 'X',
-      },
-    });
-
-    // Deduct credits if paid user
-    if (user.tier === 'PAID' && creditsUsed > 0) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          creditsRemaining: {
-            decrement: creditsUsed,
-          },
-        },
       });
+    } catch (creditError) {
+      await recordFailedUsage({
+        userId: user.id,
+        usageType: customPrompt ? 'CUSTOM_PROMPT' : 'CONTENT_SUGGESTION',
+        platformType: 'X',
+        errorMessage: creditError instanceof Error ? creditError.message : 'Credit deduction failed',
+      });
+      return NextResponse.json(
+        { error: 'No credits remaining. Please purchase more credits.' },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({

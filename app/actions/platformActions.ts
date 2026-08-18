@@ -1,6 +1,6 @@
 'use server';
 
-import { PlatformType } from '@prisma/client';
+import { PlatformType, TargetTier } from '@prisma/client';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
@@ -10,7 +10,11 @@ type ConnectionInfo = {
   platform: PlatformType;
   connectedAt: Date;
   profileId: string | null;
-  username: string | null; 
+  username: string | null;
+  setupCompleted: boolean;
+  platformRole: string | null;
+  platformAspiration: string | null;
+  targetTier: TargetTier;
 };
 
 
@@ -38,7 +42,11 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
       platform: true,
       connectedAt: true,
       profileId: true,
-      username: true, 
+      username: true,
+      setupCompleted: true,
+      platformRole: true,
+      platformAspiration: true,
+      targetTier: true,
     },
     orderBy: {
       platform: 'asc',
