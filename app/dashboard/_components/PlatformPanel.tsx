@@ -8,6 +8,7 @@ import StatusDots from '@/components/hud/StatusDots';
 import TerminalButton from '@/components/hud/TerminalButton';
 import EngagementChart from '@/components/hud/EngagementChart';
 import ReplyAssistant from '@/components/hud/ReplyAssistant';
+import { consumePendingAction, onPendingAction } from '@/components/hud/pendingAction';
 
 type Connection = {
   id: string;
@@ -142,6 +143,18 @@ export default function PlatformPanel({
       setLoading(null);
     }
   };
+
+  useEffect(() => {
+    if (!connection?.setupCompleted) return;
+    const pending = consumePendingAction();
+    if (pending === 'report') runReportStream();
+    else if (pending === 'suggestions') runSuggestionsStream();
+    return onPendingAction((action) => {
+      if (action === 'report') runReportStream();
+      else if (action === 'suggestions') runSuggestionsStream();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connection?.setupCompleted]);
 
   if (!connection) {
     return (

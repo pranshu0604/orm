@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
+import { useRouter, usePathname } from 'next/navigation';
 import { useClerk, useUser } from '@clerk/nextjs';
+import { signIn as nextAuthSignIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getPlatformConnectionsAction, disconnectPlatformAction } from '@/app/actions/platformActions';
+import { PlatformType } from '@prisma/client';
+import { triggerPendingAction } from './pendingAction';
 
 type Command = {
   id: string;
   label: string;
-  group: 'Navigate' | 'Theme' | 'Session';
+  group: 'Navigate' | 'Account' | 'Platform' | 'Session';
   run: () => void;
 };
 
@@ -19,9 +22,11 @@ export default function CommandPalette() {
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
-  const { setTheme } = useTheme();
-  const { signOut } = useClerk();
+  const pathname = usePathname();
+  const { signOut, openSignIn, openSignUp } = useClerk();
   const { isSignedIn } = useUser();
+
+  const [connection, setConnection] = useState<{ setupCompleted: boolean } | null | undefined>(undefined);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -29,21 +34,73 @@ export default function CommandPalette() {
     setActiveIndex(0);
   }, []);
 
+  useEffect(() => {
+    if (!open || !isSignedIn) return;
+    getPlatformConnectionsAction()
+      .then((conns) => setConnection(conns.find((c) => c.platform === PlatformType.X) ?? null))
+      .catch(() => setConnection(null));
+  }, [open, isSignedIn]);
+
   const commands = useMemo<Command[]>(() => {
     const nav: Command[] = [
       { id: 'nav-home', label: 'Go to Dashboard', group: 'Navigate', run: () => router.push('/') },
       { id: 'nav-settings', label: 'Go to Settings / Connections', group: 'Navigate', run: () => router.push('/settings/connections') },
     ];
-    const theme: Command[] = [
-      { id: 'theme-dark', label: 'Switch to Dark theme', group: 'Theme', run: () => setTheme('dark') },
-      { id: 'theme-light', label: 'Switch to Light theme', group: 'Theme', run: () => setTheme('light') },
-      { id: 'theme-system', label: 'Switch to System theme', group: 'Theme', run: () => setTheme('system') },
-    ];
-    const session: Command[] = isSignedIn
-      ? [{ id: 'sign-out', label: 'Sign out', group: 'Session', run: () => signOut({ redirectUrl: '/' }) }]
-      : [];
-    return [...nav, ...theme, ...session];
-  }, [router, setTheme, signOut, isSignedIn]);
+
+    if (!isSignedIn) {
+      const account: Command[] = [
+        { id: 'sign-in', label: 'Sign in', group: 'Account', run: () => openSignIn() },
+        { id: 'sign-up', label: 'Create an account', group: 'Account', run: () => openSignUp() },
+      ];
+      return [...nav, ...account];
+    }
+
+    const platform: Command[] = [];
+    if (connection === null) {
+      platform.push({
+        id: 'connect-x',
+        label: 'Connect X / Twitter',
+        group: 'Platform',
+        run: () => nextAuthSignIn('twitter'),
+      });
+    } else if (connection) {
+      if (!connection.setupCompleted) {
+        platform.push({
+          id: 'finish-setup',
+          label: 'Finish account setup (role & goal)',
+          group: 'Platform',
+          run: () => router.push('/settings/connections'),
+        });
+      } else {
+        platform.push(
+          {
+            id: 'generate-report',
+            label: 'Generate performance report',
+            group: 'Platform',
+            run: () => triggerPendingAction('report', pathname, router),
+          },
+          {
+            id: 'generate-suggestions',
+            label: 'Get content suggestions',
+            group: 'Platform',
+            run: () => triggerPendingAction('suggestions', pathname, router),
+          },
+        );
+      }
+      platform.push({
+        id: 'disconnect-x',
+        label: 'Disconnect X / Twitter',
+        group: 'Platform',
+        run: async () => {
+          await disconnectPlatformAction(PlatformType.X);
+          router.refresh();
+        },
+      });
+    }
+
+    const session: Command[] = [{ id: 'sign-out', label: 'Sign out', group: 'Session', run: () => signOut({ redirectUrl: '/' }) }];
+    return [...nav, ...platform, ...session];
+  }, [router, pathname, signOut, openSignIn, openSignUp, isSignedIn, connection]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
