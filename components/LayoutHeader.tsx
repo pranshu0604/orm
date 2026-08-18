@@ -4,7 +4,6 @@ import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@cl
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import ThemeSwitch from "./ThemeSwitch";
 import StatusDots from "./hud/StatusDots";
 import TerminalButton from "./hud/TerminalButton";
 
@@ -113,8 +112,6 @@ const LayoutHeader = () => {
                     >
                         <span className="font-mono text-[10px] tracking-widest">&#8984;K</span>
                     </button>
-
-                    <ThemeSwitch />
 
                     <SignedOut>
                         <div className="flex items-center gap-2">
