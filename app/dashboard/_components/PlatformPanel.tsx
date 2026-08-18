@@ -40,14 +40,12 @@ const ACCENT_TEXT = { cyan: 'text-cyan-400' } as const;
 const ACCENT_BORDER = { cyan: 'border-cyan-500/30' } as const;
 
 export default function PlatformPanel({
-  platform,
   label,
   glyph,
   accent,
   connection,
   prominent = false,
 }: {
-  platform: PlatformType;
   label: string;
   glyph: string;
   accent: 'cyan';

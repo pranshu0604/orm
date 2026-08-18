@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '@clerk/nextjs';
@@ -49,6 +49,14 @@ const ACCENT_TEXT = { cyan: 'text-cyan-400' } as const;
 const ACCENT_BORDER = { cyan: 'border-cyan-500/30' } as const;
 
 export default function ConnectionsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConnectionsPageInner />
+    </Suspense>
+  );
+}
+
+function ConnectionsPageInner() {
   const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
   const searchParams = useSearchParams();
   const router = useRouter();

@@ -102,7 +102,6 @@ export default function DashboardView({
 
         <div className="space-y-6">
           <PlatformPanel
-            platform={PlatformType.X}
             label="X / Twitter"
             glyph="X"
             accent="cyan"
