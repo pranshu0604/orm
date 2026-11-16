@@ -1,20 +1,16 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
-import { type NextFetchEvent, type NextRequest, NextResponse } from 'next/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-const authenticate = clerkMiddleware({
-  jwtKey: process.env.CLERK_JWT_KEY,
-  authorizedParties: process.env.NEXTAUTH_URL ? [new URL(process.env.NEXTAUTH_URL).origin] : undefined,
-});
+// /dashboard is just a redirect to / now — leave it unprotected so a signed-out visit
+// lands on the new landing page instead of Clerk's hosted sign-in.
+const isProtectedRoute = createRouteMatcher(['/forum(.*)', '/onboarding(.*)'])
 
-export default function middleware(request: NextRequest, event: NextFetchEvent) {
-  const { pathname } = request.nextUrl;
-  if (pathname === '/') return NextResponse.next();
-  return authenticate(request, event);
-}
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) await auth.protect();
+}, { jwtKey: process.env.CLERK_JWT_KEY })
 
 export const config = {
   matcher: [
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
-};
+}

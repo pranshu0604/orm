@@ -7,7 +7,7 @@ import 'server-only';
 
 export class AIServiceError extends Error {}
 
-async function requestAI<T>(path: string, body: object): Promise<T> {
+export async function fetchAI(path: string, body: object, signal?: AbortSignal): Promise<Response> {
   const token = process.env.AI_SERVICE_TOKEN;
   const url = process.env.AI_SERVICE_URL;
   if (!url || !token || token.length < 32) {
@@ -32,15 +32,21 @@ async function requestAI<T>(path: string, body: object): Promise<T> {
       body: JSON.stringify(body),
       cache: 'no-store',
       redirect: 'error',
-      signal: AbortSignal.timeout(90_000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(90_000)]) : AbortSignal.timeout(90_000),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
+    return response;
   } catch (error) {
     console.warn('AI service request failed:', error instanceof Error ? error.name : 'Unknown error');
     throw new AIServiceError('The AI service is unavailable. If it is waking up, wait a minute and try again.');
   }
 }
+
+async function requestAI<T>(path: string, body: object): Promise<T> {
+  const response = await fetchAI(path, body);
+  if (!response.ok) throw new AIServiceError('The AI service is unavailable. Please try again.');
+  return response.json();
+}
+
 
 export interface TwitterMetrics {
   total_tweets: number;
@@ -68,28 +74,6 @@ export interface TwitterPerformanceReport {
   summary: string;
 }
 
-export interface GitHubMetrics {
-  total_commits: number;
-  total_prs: number;
-  total_issues: number;
-  total_stars: number;
-  total_forks: number;
-  follower_count: number;
-  following_count: number;
-  active_repos: number;
-  contribution_streak: number;
-}
-
-export interface GitHubPerformanceReport {
-  metrics: GitHubMetrics;
-  overall_score: number;
-  strengths: string[];
-  areas_for_improvement: string[];
-  top_languages: string[];
-  activity_pattern: string;
-  summary: string;
-}
-
 export interface TwitterBioSuggestion {
   suggested_bio: string;
   reasoning: string;
@@ -109,39 +93,6 @@ export interface TwitterContentSuggestions {
   engagement_strategy: string;
 }
 
-export interface GitHubBioSuggestion {
-  suggested_bio: string;
-  reasoning: string;
-}
-
-export interface CommitSuggestion {
-  focus_area: string;
-  specific_suggestion: string;
-  example: string;
-}
-
-export interface PRSuggestion {
-  focus_area: string;
-  specific_suggestion: string;
-  example: string;
-}
-
-export interface IssueSuggestion {
-  suggestion_type: 'create' | 'participate' | 'organize';
-  specific_suggestion: string;
-  impact: string;
-}
-
-export interface GitHubContentSuggestions {
-  bio_suggestion?: GitHubBioSuggestion;
-  commit_suggestions: CommitSuggestion[];
-  pr_suggestions: PRSuggestion[];
-  issue_suggestions: IssueSuggestion[];
-  accounts_to_follow: string[];
-  recommended_projects: string[];
-  growth_strategy: string;
-}
-
 export interface ReplySuggestion {
   original_tweet_context: string;
   suggested_reply: string;
@@ -155,7 +106,7 @@ export interface CustomPromptResponse {
 }
 
 export type TargetTier = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
-export type PlatformType = 'X' | 'GITHUB';
+export type PlatformType = 'X';
 
 class AIServiceClient {
   /**
@@ -191,37 +142,6 @@ class AIServiceClient {
   }
 
   /**
-   * Generate GitHub performance report
-   */
-  async generateGitHubReport(params: {
-    userData: {
-      username: string;
-      bio?: string;
-      followers: number;
-      following: number;
-      public_repos: number;
-      total_commits: number;
-      total_prs: number;
-      total_issues: number;
-    };
-    reposData: Array<{
-      name: string;
-      description?: string;
-      stars: number;
-      language?: string;
-    }>;
-    targetTier: TargetTier;
-    previousReports?: string[];
-  }): Promise<GitHubPerformanceReport> {
-    return requestAI('/v1/reports/github', {
-      user_data: params.userData,
-      repos_data: params.reposData,
-      target_tier: params.targetTier,
-      previous_reports: params.previousReports,
-    });
-  }
-
-  /**
    * Generate Twitter content suggestions
    */
   async generateTwitterSuggestions(params: {
@@ -236,29 +156,6 @@ class AIServiceClient {
     previousSuggestions?: string[];
   }): Promise<TwitterContentSuggestions> {
     return requestAI('/v1/suggestions/twitter', {
-      user_data: params.userData,
-      target_tier: params.targetTier,
-      based_on_report: params.basedOnReport,
-      custom_prompt: params.customPrompt,
-      previous_suggestions: params.previousSuggestions,
-    });
-  }
-
-  /**
-   * Generate GitHub content suggestions
-   */
-  async generateGitHubSuggestions(params: {
-    userData: {
-      username: string;
-      bio?: string;
-      role_aspiration?: string;
-    };
-    targetTier: TargetTier;
-    basedOnReport?: string;
-    customPrompt?: string;
-    previousSuggestions?: string[];
-  }): Promise<GitHubContentSuggestions> {
-    return requestAI('/v1/suggestions/github', {
       user_data: params.userData,
       target_tier: params.targetTier,
       based_on_report: params.basedOnReport,
@@ -306,6 +203,18 @@ class AIServiceClient {
     });
   }
 
+  /**
+   * Health check
+   */
+  async healthCheck(): Promise<{ status: string; service: string; version: string }> {
+    const response = await fetch(new URL('/v1/health', process.env.AI_SERVICE_URL ?? 'http://localhost:8000'), { signal: AbortSignal.timeout(2500) });
+
+    if (!response.ok) {
+      throw new Error('AI Service is not responding');
+    }
+
+    return response.json();
+  }
 }
 
 // Export singleton instance
