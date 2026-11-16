@@ -1,4 +1,8 @@
-// Runs periodically via GitHub Actions to find a working Nitter instance and cache it in Redis.
+/**
+ * Update Nitter Instances Script
+ * This script runs periodically via GitHub Actions to update the cached list of working Nitter instances.
+ * It tests instances and caches the best working one in Redis.
+ */
 
 const { chromium } = require('playwright');
 
@@ -42,20 +46,20 @@ async function isAlive(url) {
     });
     const page = await context.newPage();
     const testUrl = `${url}/jack`;
-    
+
     console.log(`Testing ${testUrl}...`);
     const response = await page.goto(testUrl, { timeout: 10000 });
-    
+
     if (!response || response.status() !== 200) {
       console.log(`  ❌ Status: ${response?.status() || 'timeout'}`);
       await context.close();
       return false;
     }
-    
+
     try {
       await page.waitForSelector('.timeline-item', { timeout: 5000 });
       const tweetCount = await page.evaluate(() => document.querySelectorAll('.timeline-item').length);
-      
+
       if (tweetCount > 0) {
         console.log(`  ✅ Working (${tweetCount} tweets found)`);
         await context.close();
@@ -82,7 +86,7 @@ async function isAlive(url) {
 async function getAllHealthyInstances() {
   console.log('\n📡 Fetching instances from status.d420.de...');
   const browser = await chromium.launch({ headless: true });
-  
+
   try {
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
@@ -90,21 +94,19 @@ async function getAllHealthyInstances() {
     const page = await context.newPage();
     await page.goto('https://status.d420.de/', { timeout: 30000 });
     await page.waitForSelector('table tr', { timeout: 5000 });
-    
+
     const instances = await page.evaluate(() => {
-      // status.d420.de columns: [0] domain, [1] region, [2] up-flag, [3] history,
-      // [4] response time, [5] uptime %, [6] search-works flag, [7] version, [8] connectivity, [9] score.
       const rows = Array.from(document.querySelectorAll('table tr')).slice(1);
       const valid = [];
 
       for (const row of rows) {
         const tds = row.querySelectorAll('td');
         const instance = tds[0]?.textContent?.trim() ?? '';
-        const searchWorks = tds[6]?.textContent?.trim();
-        const uptimeStr = tds[5]?.textContent?.trim() ?? '0%';
+        const healthy = tds[2]?.textContent?.trim();
+        const uptimeStr = tds[4]?.textContent?.trim() ?? '0%';
         const uptime = parseInt(uptimeStr.replace('%', ''), 10) || 0;
 
-        if (searchWorks === '✅' && uptime >= 80) {
+        if (healthy === '✅' && uptime >= 80) {
           valid.push({ url: `https://${instance}`, uptime });
         }
       }
@@ -112,14 +114,14 @@ async function getAllHealthyInstances() {
       valid.sort((a, b) => b.uptime - a.uptime);
       return valid;
     });
-    
+
     await browser.close();
     console.log(`  Found ${instances.length} healthy instances`);
     return instances.map(i => i.url);
   } catch (error) {
     console.log(`  ⚠️  Failed to fetch from status page: ${error.message}`);
     await browser.close();
-    
+
     // Fall back to known instances
     console.log('  Using known instances as fallback');
     return KNOWN_INSTANCES
@@ -132,7 +134,7 @@ async function getAllHealthyInstances() {
 // Find the first working Nitter instance
 async function findWorkingNitter(instances) {
   console.log('\n🔍 Testing instances for availability...\n');
-  
+
   for (const candidate of instances) {
     try {
       if (await isAlive(candidate)) {
@@ -142,27 +144,27 @@ async function findWorkingNitter(instances) {
       console.log(`  Error testing ${candidate}: ${error.message}`);
     }
   }
-  
+
   throw new Error('No reachable Nitter instances found');
 }
 
 // Main execution
 async function main() {
   console.log('🚀 Starting Nitter instances update...\n');
-  
+
   try {
     const redis = getRedisClient();
-    
+
     // Get list of healthy instances
     const instances = await getAllHealthyInstances();
-    
+
     if (!instances.length) {
       throw new Error('No healthy instances available');
     }
-    
+
     // Find the first working one
     const workingInstance = await findWorkingNitter(instances);
-    
+
     // Cache it in Redis
     console.log(`\n💾 Caching ${workingInstance} in Redis...`);
     try {
@@ -175,11 +177,11 @@ async function main() {
       console.error(`   Error stack: ${redisError.stack}`);
       console.error(`   Continuing anyway - instance was found: ${workingInstance}`);
     }
-    
+
     console.log(`\n✅ Successfully updated Nitter instance cache!`);
     console.log(`   Active instance: ${workingInstance}`);
     console.log(`   Cache TTL: ${CACHE_TTL_SECONDS / 3600} hours`);
-    
+
   } catch (error) {
     console.error('\n❌ Failed to update Nitter instances:');
     console.error(`   Error: ${error.message}`);

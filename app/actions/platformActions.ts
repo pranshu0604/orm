@@ -1,20 +1,18 @@
 'use server';
 
-import { PlatformType, TargetTier } from '@prisma/client';
+import { PlatformType } from '@prisma/client';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
+import { isDemoOwner } from '@/lib/demo-access';
 import { prisma } from '@/lib/prisma';
 
 // Type for the data returned to the client
 type ConnectionInfo = {
+  id: string;
   platform: PlatformType;
   connectedAt: Date;
   profileId: string | null;
   username: string | null;
-  setupCompleted: boolean;
-  platformRole: string | null;
-  platformAspiration: string | null;
-  targetTier: TargetTier;
 };
 
 
@@ -22,13 +20,13 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
   const authData = await auth();
   const clerkId = authData.userId;
 
-  if (!clerkId) {
+  if (!clerkId || !isDemoOwner(clerkId)) {
     throw new Error("User not authenticated.");
   }
 
   const dbUser = await prisma.user.findUnique({
     where: { clerkId },
-    select: { id: true } 
+    select: { id: true }
   });
 
   if (!dbUser) {
@@ -37,16 +35,13 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
   }
 
   const connections = await prisma.platformConnection.findMany({
-    where: { userId: dbUser.id },
+    where: { userId: dbUser.id, username: { not: null } },
     select: {
+      id: true,
       platform: true,
       connectedAt: true,
       profileId: true,
       username: true,
-      setupCompleted: true,
-      platformRole: true,
-      platformAspiration: true,
-      targetTier: true,
     },
     orderBy: {
       platform: 'asc',
@@ -60,30 +55,24 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
 }
 
 export async function disconnectPlatformAction(platform: PlatformType): Promise<{ success: boolean; error?: string }> {
-    // --- Add await here ---
     const authData = await auth();
     const clerkId = authData.userId;
 
-    if (!clerkId) return { success: false, error: "User not authenticated." };
+    if (!clerkId || !isDemoOwner(clerkId)) return { success: false, error: "User not authenticated." };
 
     const dbUser = await prisma.user.findUnique({ where: { clerkId }, select: { id: true } });
     if (!dbUser) return { success: false, error: "User not found." };
 
     try {
-        await prisma.platformConnection.delete({
-            where: { userId_platform: { userId: dbUser.id, platform } }
+        await prisma.platformConnection.updateMany({
+            where: { userId: dbUser.id, platform },
+            data: { username: null, accessToken: null, refreshToken: null, expiresAt: null, scopes: null },
         });
 
         console.log(`Disconnected ${platform} for user ${dbUser.id}`);
         revalidatePath('/settings/connections');
         return { success: true };
   } catch (error: unknown) {
-    const e = error as { code?: string };
-    if (e.code === 'P2025') { // Record to delete does not exist
-       console.warn(`Attempted to disconnect ${platform} for user ${dbUser.id}, but no record found.`);
-       revalidatePath('/settings/connections');
-       return { success: true };
-    }
     console.error(`Error disconnecting ${platform}:`, error);
     return { success: false, error: `Failed to disconnect ${platform}.` };
   }

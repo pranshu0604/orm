@@ -1,15 +1,9 @@
 'use client'
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs"
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import StatusDots from "./hud/StatusDots";
-import TerminalButton from "./hud/TerminalButton";
-
-const NAV_LINKS = [
-    { href: '/settings/connections', label: 'Settings' },
-];
 
 const LayoutHeader = () => {
     const [isMounted, setIsMounted] = useState(false);
@@ -28,7 +22,7 @@ const LayoutHeader = () => {
 
     if (!isMounted) {
         return (
-            <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-transparent">
+            <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-transparent">
                 <div className="max-w-7xl mx-auto px-6 h-full" />
             </header>
         );
@@ -38,108 +32,141 @@ const LayoutHeader = () => {
         <motion.header
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
                 scrolled
-                    ? 'bg-[#030712]/95 backdrop-blur-md border-b border-cyan-500/10'
-                    : 'bg-[#030712]/60 backdrop-blur-sm'
+                    ? 'bg-[#030712]/80 backdrop-blur-xl border-b border-white/5'
+                    : 'bg-transparent'
             }`}
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-            <motion.div
-                className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent"
-                animate={{ opacity: [0.3, 0.6, 0.3] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            />
-
-            <div className="relative max-w-7xl mx-auto px-6 lg:px-8 h-14 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 group">
-                    <div className="relative">
-                        <div className="absolute -top-1 -left-1 w-2 h-2 border-l border-t border-cyan-500/60" />
-                        <div className="absolute -top-1 -right-1 w-2 h-2 border-r border-t border-cyan-500/60" />
-                        <div className="absolute -bottom-1 -left-1 w-2 h-2 border-l border-b border-cyan-500/60" />
-                        <div className="absolute -bottom-1 -right-1 w-2 h-2 border-r border-b border-cyan-500/60" />
+                    <motion.div
+                        className="relative"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        {/* Logo glow */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
 
-                        <div className="w-7 h-7 border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 flex items-center justify-center relative">
+                        {/* Logo container */}
+                        <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-500 flex items-center justify-center shadow-lg">
+                            <span className="text-white font-bold text-sm tracking-tight">P</span>
+
+                            {/* Animated ring */}
                             <motion.div
-                                className="absolute inset-0 bg-cyan-500/20"
-                                animate={{ opacity: [0, 0.3, 0] }}
-                                transition={{ duration: 2, repeat: Infinity }}
+                                className="absolute inset-0 rounded-lg border border-white/20"
+                                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0, 0.5] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                             />
-                            <span className="text-cyan-400 font-mono text-xs font-bold relative z-10">P</span>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-base font-mono font-bold tracking-wider text-white group-hover:text-cyan-400 transition-colors duration-300">
-                            P.R.A.N.
-                        </span>
+                    <div className="flex flex-col">
                         <motion.span
-                            className="text-cyan-400 font-mono text-xs"
-                            animate={{ opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 2, repeat: Infinity }}
+                            className="text-white font-bold text-lg tracking-tight leading-none"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
                         >
-                            _
+                            PRAN
+                        </motion.span>
+                        <motion.span
+                            className="text-gray-500 text-[10px] tracking-widest uppercase leading-none"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            Analysis Node
                         </motion.span>
                     </div>
                 </Link>
 
                 {/* Nav Links - Center */}
-                <nav className="hidden md:flex items-center gap-8">
-                    {NAV_LINKS.map((link) => (
+                <motion.nav
+                    className="hidden md:flex items-center gap-1"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                >
+                    {[
+                        { href: '/mvp', label: 'Sample dashboard' },
+                        { href: '/settings/connections', label: 'Connections' },
+                    ].map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
-                            className="relative py-2 font-mono text-xs text-gray-400 hover:text-white transition-colors duration-200 tracking-widest uppercase group"
+                            className="relative px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-200 group"
                         >
-                            {link.label}
-                            <span className="absolute -bottom-px left-0 right-0 h-px bg-cyan-400/60 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+                            <span className="relative z-10">{link.label}</span>
+                            <motion.div
+                                className="absolute inset-0 rounded-lg bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                layoutId="navHover"
+                            />
                         </Link>
                     ))}
-                </nav>
+                </motion.nav>
 
                 {/* Right side actions */}
-                <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-[#0a0f1e]/80 border border-cyan-500/20">
-                        <StatusDots />
-                        <span className="font-mono text-[10px] text-gray-400 tracking-wider uppercase">System: Online</span>
+                <motion.div
+                    className="flex items-center gap-3"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    {/* Status indicator */}
+                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                        <motion.div
+                            className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                            animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                        />
+                        <span className="text-emerald-400 text-xs font-medium">Online</span>
                     </div>
-
-                    <button
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
-                        className="hidden md:flex items-center gap-1 px-2 py-1.5 border border-white/10 hover:border-cyan-500/30 text-gray-500 hover:text-cyan-400 transition-colors"
-                        aria-label="Open command palette"
-                    >
-                        <span className="font-mono text-[10px] tracking-widest">&#8984;K</span>
-                    </button>
 
                     <SignedOut>
                         <div className="flex items-center gap-2">
                             <SignInButton mode="modal">
-                                <button className="font-mono text-xs text-gray-400 hover:text-white transition-colors tracking-widest uppercase px-2">
+                                <motion.button
+                                    className="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
                                     Sign In
-                                </button>
+                                </motion.button>
                             </SignInButton>
-                            <SignUpButton mode="modal">
-                                <TerminalButton>Get Started</TerminalButton>
-                            </SignUpButton>
                         </div>
                     </SignedOut>
 
                     <SignedIn>
                         <div className="relative">
-                            <div className="absolute inset-0 bg-cyan-500/10 blur-md" />
+                            {/* Glow behind avatar */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-full blur-md" />
                             <UserButton
                                 appearance={{
                                     elements: {
-                                        avatarBox: "w-8 h-8 ring-1 ring-cyan-500/30 hover:ring-cyan-400/60 transition-all duration-300 rounded-none"
+                                        avatarBox: "w-9 h-9 ring-2 ring-white/10 hover:ring-purple-500/50 transition-all duration-300"
                                     }
                                 }}
                             />
                         </div>
                     </SignedIn>
-                </div>
+                </motion.div>
             </div>
+
+            {/* Bottom gradient line */}
+            <motion.div
+                className="absolute bottom-0 left-0 right-0 h-px"
+                style={{
+                    background: scrolled
+                        ? 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3), transparent)'
+                        : 'transparent'
+                }}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: scrolled ? 1 : 0 }}
+                transition={{ duration: 0.5 }}
+            />
         </motion.header>
     )
 }

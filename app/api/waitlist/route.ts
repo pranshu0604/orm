@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { publicActionLimiter, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
-  try {
-    const { success } = await publicActionLimiter.limit(getClientIp(req));
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      );
-    }
+  if (process.env.NEXT_PUBLIC_WAITLIST_ENABLED !== 'true') {
+    return NextResponse.json({ error: 'Waitlist unavailable' }, { status: 404 });
+  }
 
+  try {
     // Parse request body
     const body = await req.json();
     const { email } = body;
 
     // Validate email
-    if (!email) {
+    if (typeof email !== 'string' || !email.trim() || email.length > 254) {
       return NextResponse.json(
         { error: 'Email is required' },
         { status: 400 }

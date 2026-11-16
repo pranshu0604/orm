@@ -3,7 +3,44 @@
  * Communicates with the FastAPI AI service for reports and suggestions
  */
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+import 'server-only';
+
+export class AIServiceError extends Error {}
+
+async function requestAI<T>(path: string, body: object): Promise<T> {
+  const token = process.env.AI_SERVICE_TOKEN;
+  const url = process.env.AI_SERVICE_URL;
+  if (!url || !token || token.length < 32) {
+    throw new AIServiceError('The AI service is not configured.');
+  }
+
+  let endpoint: URL;
+  try {
+    endpoint = new URL(path, url);
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname);
+    if (endpoint.protocol !== 'https:' && !(loopback && endpoint.protocol === 'http:')) {
+      throw new Error('Invalid scheme');
+    }
+  } catch {
+    throw new AIServiceError('The AI service address is invalid.');
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(90_000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.warn('AI service request failed:', error instanceof Error ? error.name : 'Unknown error');
+    throw new AIServiceError('The AI service is unavailable. If it is waking up, wait a minute and try again.');
+  }
+}
 
 export interface TwitterMetrics {
   total_tweets: number;
@@ -31,6 +68,28 @@ export interface TwitterPerformanceReport {
   summary: string;
 }
 
+export interface GitHubMetrics {
+  total_commits: number;
+  total_prs: number;
+  total_issues: number;
+  total_stars: number;
+  total_forks: number;
+  follower_count: number;
+  following_count: number;
+  active_repos: number;
+  contribution_streak: number;
+}
+
+export interface GitHubPerformanceReport {
+  metrics: GitHubMetrics;
+  overall_score: number;
+  strengths: string[];
+  areas_for_improvement: string[];
+  top_languages: string[];
+  activity_pattern: string;
+  summary: string;
+}
+
 export interface TwitterBioSuggestion {
   suggested_bio: string;
   reasoning: string;
@@ -50,6 +109,39 @@ export interface TwitterContentSuggestions {
   engagement_strategy: string;
 }
 
+export interface GitHubBioSuggestion {
+  suggested_bio: string;
+  reasoning: string;
+}
+
+export interface CommitSuggestion {
+  focus_area: string;
+  specific_suggestion: string;
+  example: string;
+}
+
+export interface PRSuggestion {
+  focus_area: string;
+  specific_suggestion: string;
+  example: string;
+}
+
+export interface IssueSuggestion {
+  suggestion_type: 'create' | 'participate' | 'organize';
+  specific_suggestion: string;
+  impact: string;
+}
+
+export interface GitHubContentSuggestions {
+  bio_suggestion?: GitHubBioSuggestion;
+  commit_suggestions: CommitSuggestion[];
+  pr_suggestions: PRSuggestion[];
+  issue_suggestions: IssueSuggestion[];
+  accounts_to_follow: string[];
+  recommended_projects: string[];
+  growth_strategy: string;
+}
+
 export interface ReplySuggestion {
   original_tweet_context: string;
   suggested_reply: string;
@@ -63,15 +155,9 @@ export interface CustomPromptResponse {
 }
 
 export type TargetTier = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
-export type PlatformType = 'X';
+export type PlatformType = 'X' | 'GITHUB';
 
 class AIServiceClient {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = AI_SERVICE_URL;
-  }
-
   /**
    * Generate Twitter/X performance report
    */
@@ -96,25 +182,43 @@ class AIServiceClient {
     targetTier: TargetTier;
     previousReports?: string[];
   }): Promise<TwitterPerformanceReport> {
-    const response = await fetch(`${this.baseUrl}/v1/reports/twitter`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_data: params.userData,
-        posts_data: params.postsData,
-        target_tier: params.targetTier,
-        previous_reports: params.previousReports,
-      }),
+    return requestAI('/v1/reports/twitter', {
+      user_data: params.userData,
+      posts_data: params.postsData,
+      target_tier: params.targetTier,
+      previous_reports: params.previousReports,
     });
+  }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(`AI Service Error: ${error.detail || response.statusText}`);
-    }
-
-    return response.json();
+  /**
+   * Generate GitHub performance report
+   */
+  async generateGitHubReport(params: {
+    userData: {
+      username: string;
+      bio?: string;
+      followers: number;
+      following: number;
+      public_repos: number;
+      total_commits: number;
+      total_prs: number;
+      total_issues: number;
+    };
+    reposData: Array<{
+      name: string;
+      description?: string;
+      stars: number;
+      language?: string;
+    }>;
+    targetTier: TargetTier;
+    previousReports?: string[];
+  }): Promise<GitHubPerformanceReport> {
+    return requestAI('/v1/reports/github', {
+      user_data: params.userData,
+      repos_data: params.reposData,
+      target_tier: params.targetTier,
+      previous_reports: params.previousReports,
+    });
   }
 
   /**
@@ -131,26 +235,36 @@ class AIServiceClient {
     customPrompt?: string;
     previousSuggestions?: string[];
   }): Promise<TwitterContentSuggestions> {
-    const response = await fetch(`${this.baseUrl}/v1/suggestions/twitter`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_data: params.userData,
-        target_tier: params.targetTier,
-        based_on_report: params.basedOnReport,
-        custom_prompt: params.customPrompt,
-        previous_suggestions: params.previousSuggestions,
-      }),
+    return requestAI('/v1/suggestions/twitter', {
+      user_data: params.userData,
+      target_tier: params.targetTier,
+      based_on_report: params.basedOnReport,
+      custom_prompt: params.customPrompt,
+      previous_suggestions: params.previousSuggestions,
     });
+  }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(`AI Service Error: ${error.detail || response.statusText}`);
-    }
-
-    return response.json();
+  /**
+   * Generate GitHub content suggestions
+   */
+  async generateGitHubSuggestions(params: {
+    userData: {
+      username: string;
+      bio?: string;
+      role_aspiration?: string;
+    };
+    targetTier: TargetTier;
+    basedOnReport?: string;
+    customPrompt?: string;
+    previousSuggestions?: string[];
+  }): Promise<GitHubContentSuggestions> {
+    return requestAI('/v1/suggestions/github', {
+      user_data: params.userData,
+      target_tier: params.targetTier,
+      based_on_report: params.basedOnReport,
+      custom_prompt: params.customPrompt,
+      previous_suggestions: params.previousSuggestions,
+    });
   }
 
   /**
@@ -164,23 +278,10 @@ class AIServiceClient {
       role?: string;
     };
   }): Promise<ReplySuggestion> {
-    const response = await fetch(`${this.baseUrl}/v1/suggestions/reply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        tweet_context: params.tweetContext,
-        user_profile: params.userProfile,
-      }),
+    return requestAI('/v1/suggestions/reply', {
+      tweet_context: params.tweetContext,
+      user_profile: params.userProfile,
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(`AI Service Error: ${error.detail || response.statusText}`);
-    }
-
-    return response.json();
   }
 
   /**
@@ -196,40 +297,15 @@ class AIServiceClient {
     previousReports?: string[];
     previousSuggestions?: string[];
   }): Promise<CustomPromptResponse> {
-    const response = await fetch(`${this.baseUrl}/v1/custom-prompt`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        custom_prompt: params.customPrompt,
-        platform_type: params.platformType,
-        user_context: params.userContext,
-        previous_reports: params.previousReports,
-        previous_suggestions: params.previousSuggestions,
-      }),
+    return requestAI('/v1/custom-prompt', {
+      custom_prompt: params.customPrompt,
+      platform_type: params.platformType,
+      user_context: params.userContext,
+      previous_reports: params.previousReports,
+      previous_suggestions: params.previousSuggestions,
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(`AI Service Error: ${error.detail || response.statusText}`);
-    }
-
-    return response.json();
   }
 
-  /**
-   * Health check
-   */
-  async healthCheck(): Promise<{ status: string; service: string; version: string }> {
-    const response = await fetch(`${this.baseUrl}/v1/health`);
-
-    if (!response.ok) {
-      throw new Error('AI Service is not responding');
-    }
-
-    return response.json();
-  }
 }
 
 // Export singleton instance

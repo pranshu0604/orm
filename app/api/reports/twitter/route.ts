@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+import { allowsDemoOrigin, isDemoOwner } from '@/lib/demo-access';
 import { prisma } from '@/lib/prisma';
-import { aiClient } from '@/lib/ai-client';
-import { hasCreditAvailable, recordUsage, recordFailedUsage } from '@/lib/credits';
-import { apiActionLimiter } from '@/lib/rateLimit';
+import { AIServiceError, aiClient } from '@/lib/ai-client';
 
 /**
  * POST /api/reports/twitter
  * Generate a Twitter/X performance report
  */
+export const maxDuration = 120;
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
@@ -20,12 +21,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { success } = await apiActionLimiter.limit(userId);
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please slow down.' },
-        { status: 429 }
-      );
+    if (!isDemoOwner(userId) || !allowsDemoOrigin(req)) {
+      return NextResponse.json({ error: 'Live generation is reserved for the demo owner.' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -39,7 +36,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user from database
-    const user = await prisma.user.findUnique({ where: { clerkId: userId } });
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: {
+        usageHistory: {
+          where: {
+            usageType: 'PERFORMANCE_REPORT',
+            successful: true,
+          },
+        },
+      },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -49,15 +56,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has credits (free tier limits or purchased credits)
-    const canProceed = await hasCreditAvailable(
-      user.id,
-      user.tier,
-      user.creditsRemaining,
-      'PERFORMANCE_REPORT'
-    );
-    if (!canProceed) {
+    if (user.tier === 'FREE') {
+      const freeReportsUsed = user.usageHistory.length;
+      const FREE_TIER_LIMIT = 10; // Configure as needed
+
+      if (freeReportsUsed >= FREE_TIER_LIMIT && user.creditsRemaining <= 0) {
+        return NextResponse.json(
+          { error: 'Credit limit reached. Please upgrade or purchase more credits.' },
+          { status: 403 }
+        );
+      }
+    } else if (user.creditsRemaining <= 0) {
       return NextResponse.json(
-        { error: 'Credit limit reached. Please upgrade or purchase more credits.' },
+        { error: 'No credits remaining. Please purchase more credits.' },
         { status: 403 }
       );
     }
@@ -77,7 +88,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!platformConnection || platformConnection.userId !== user.id) {
+    if (!platformConnection?.username || platformConnection.userId !== user.id) {
       return NextResponse.json(
         { error: 'Platform connection not found' },
         { status: 404 }
@@ -139,11 +150,15 @@ export async function POST(req: NextRequest) {
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
       // Log failed usage (doesn't count toward limits)
-      await recordFailedUsage({
-        userId: user.id,
-        usageType: 'PERFORMANCE_REPORT',
-        platformType: 'X',
-        errorMessage,
+      await prisma.usageHistory.create({
+        data: {
+          userId: user.id,
+          usageType: 'PERFORMANCE_REPORT',
+          creditsUsed: 0,
+          successful: false,
+          platformType: 'X',
+          errorMessage,
+        },
       });
 
       throw error;
@@ -161,26 +176,28 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Log usage and atomically deduct credits if paid user. The report is already
-    // generated at this point, so a lost credit race still needs a clean 403 + audit trail.
-    try {
-      await recordUsage({
-        userId: user.id,
-        tier: user.tier,
-        usageType: 'PERFORMANCE_REPORT',
-        platformType: 'X',
-      });
-    } catch (creditError) {
-      await recordFailedUsage({
+    // Log successful usage
+    const creditsUsed = user.tier === 'PAID' ? 1 : 0;
+    await prisma.usageHistory.create({
+      data: {
         userId: user.id,
         usageType: 'PERFORMANCE_REPORT',
+        creditsUsed,
+        successful: true,
         platformType: 'X',
-        errorMessage: creditError instanceof Error ? creditError.message : 'Credit deduction failed',
+      },
+    });
+
+    // Deduct credits if paid user
+    if (user.tier === 'PAID' && creditsUsed > 0) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          creditsRemaining: {
+            decrement: creditsUsed,
+          },
+        },
       });
-      return NextResponse.json(
-        { error: 'No credits remaining. Please purchase more credits.' },
-        { status: 403 }
-      );
     }
 
     return NextResponse.json({
@@ -193,6 +210,9 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
+    if (error instanceof AIServiceError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     console.error('Error generating Twitter report:', error);
     return NextResponse.json(
       { error: 'Failed to generate report. Please try again.' },

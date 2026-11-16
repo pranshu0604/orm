@@ -25,11 +25,6 @@ export async function POST(req: Request) {
     // Get the raw body as text (required for signature verification)
     const body = await req.text();
 
-    // Debug: log first 100 chars of body and secret prefix
-    console.log("[webhook] Body preview:", body.substring(0, 100));
-    console.log("[webhook] Secret prefix:", webhookSecret.substring(0, 10));
-    console.log("[webhook] Headers:", { svix_id, svix_timestamp, sig_prefix: svix_signature?.substring(0, 20) });
-
     // Verify the webhook signature
     const wh = new Webhook(webhookSecret);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,8 +36,7 @@ export async function POST(req: Request) {
         "svix-timestamp": svix_timestamp,
         "svix-signature": svix_signature,
       });
-    } catch (err) {
-      console.error("Webhook verification failed:", err);
+    } catch {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
@@ -62,7 +56,6 @@ export async function POST(req: Request) {
         create: { clerkId: id, email, name, image },
       });
 
-      console.log(`User ${eventType}:`, { id, email, name });
     } else if (eventType === "user.deleted") {
       const { id } = evt.data;
 
