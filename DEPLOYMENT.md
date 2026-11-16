@@ -4,7 +4,7 @@ The homepage (/) is the dashboard and displays sample data. Use the existing Con
 
 ## Personal Vercel Hobby preview
 
-Use the Next.js preset, Node.js 22.x, install command `npm ci`, and build command `npm run build`. Use one stable HTTPS preview hostname for Clerk, `NEXTAUTH_URL`, and the OAuth callback. Enable Fluid Compute for the report routes' 120-second request budget. Keep the existing production branch and environment untouched until preview validation is complete.
+Use the Next.js preset, Node.js 22.x, install command `npm ci`, and build command `npm run build`. Use one stable HTTPS preview hostname for Clerk, `NEXTAUTH_URL`, and the OAuth callback. Enable Fluid Compute for the report routes' 120-second request budget. The portfolio-deploy branch uses manual Vercel previews. After saving the Preview environment variables, open Deployments, choose Create Deployment, and select portfolio-deploy. Keep the existing production branch and environment untouched until preview validation is complete.
 
 | Preview variable | Value |
 | --- | --- |
