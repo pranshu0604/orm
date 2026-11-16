@@ -10,7 +10,7 @@ export default async function ConnectionsPage() {
     return (
       <main className="mx-auto max-w-xl p-6">
         <h1 className="text-xl font-semibold">Live reports are reserved for the demo owner</h1>
-        <Link className="mt-4 inline-block underline" href="/mvp">View the public sample</Link>
+        <Link className="mt-4 inline-block underline" href="/">Back to the dashboard</Link>
       </main>
     );
   }

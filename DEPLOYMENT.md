@@ -1,6 +1,6 @@
 # P.R.A.N. portfolio preview
 
-The public page links to /mvp, a dashboard with sample data. Only the configured personal Clerk user can connect a GitHub profile or run live reports. GitHub report generation uses public GitHub data and stores the report in Postgres. X collection requires Playwright Chromium and remains local-development only. Hosted X OAuth is disabled; the backend contracts for X reports and suggestions remain available to authenticated server callers.
+The homepage (/) is the dashboard and displays sample data. Use the existing Connections page to generate live reports. Only the configured personal Clerk user can connect a GitHub profile or run live reports. GitHub report generation uses public GitHub data and stores the report in Postgres. X collection requires Playwright Chromium and remains local-development only. Hosted X OAuth is disabled; the backend contracts for X reports and suggestions remain available to authenticated server callers.
 
 ## Personal Vercel Hobby preview
 
@@ -18,10 +18,9 @@ Use the Next.js preset, Node.js 22.x, install command `npm ci`, and build comman
 | `DIRECT_DATABASE_URL` | Direct URL for the same Preview database; needed where migrations run |
 | `AI_SERVICE_URL` | The verified personal HTTPS Render service origin |
 | `AI_SERVICE_TOKEN` | Same 32+ character random value as the Render service |
-| `NEXT_PUBLIC_WAITLIST_ENABLED` | Leave unset or `false` for the portfolio preview |
 
-Only the publishable Clerk key and optional waitlist flag go in the browser. Leave X, Upstash, and Clerk webhook settings unset for the preview. OAuth creates the owner's database row from their verified primary Clerk email if needed.
+Only the publishable Clerk key goes in the browser. Leave X, Upstash, and Clerk webhook settings unset for the preview. OAuth creates the owner's database row from their verified primary Clerk email if needed.
 
 Run `npx prisma migrate deploy` once with the dedicated Preview database's direct URL before testing sign-in. The six checked-in migrations already include the GitHub and suggestion enum values; do not run `prisma db push` against an existing deployment. On an existing database, confirm migration status and drift separately before applying anything.
 
-Check the Render health URL, then sign in as the owner on the stable preview hostname, connect the personal GitHub profile, and generate a report in Settings → Connections. Check that an unauthenticated visitor can view /mvp and a non-owner cannot generate a report. If the Free backend is asleep, request /v1/health and wait for its JSON response before running the report.
+Check the Render health URL, then sign in as the owner on the stable preview hostname, connect the personal GitHub profile, and generate a report in Settings → Connections. Check that an unauthenticated visitor can view the homepage and a non-owner cannot generate a report. If the Free backend is asleep, request /v1/health and wait for its JSON response before running the report.

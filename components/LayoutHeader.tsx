@@ -91,7 +91,7 @@ const LayoutHeader = () => {
                     transition={{ delay: 0.3 }}
                 >
                     {[
-                        { href: '/mvp', label: 'Sample dashboard' },
+                        { href: '/', label: 'Dashboard' },
                         { href: '/settings/connections', label: 'Connections' },
                     ].map((link) => (
                         <Link
@@ -127,7 +127,7 @@ const LayoutHeader = () => {
 
                     <SignedOut>
                         <div className="flex items-center gap-2">
-                            <SignInButton mode="modal">
+                            <SignInButton mode="modal" fallbackRedirectUrl="/">
                                 <motion.button
                                     className="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors"
                                     whileHover={{ scale: 1.02 }}

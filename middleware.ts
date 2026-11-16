@@ -8,7 +8,7 @@ const authenticate = clerkMiddleware({
 
 export default function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl;
-  if (pathname === '/' || pathname === '/mvp') return NextResponse.next();
+  if (pathname === '/') return NextResponse.next();
   return authenticate(request, event);
 }
 
