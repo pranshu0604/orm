@@ -37,7 +37,7 @@ export async function getPlatformConnectionsAction(): Promise<ConnectionInfo[]> 
   }
 
   const connections = await prisma.platformConnection.findMany({
-    where: { userId: dbUser.id },
+    where: { userId: dbUser.id, platform: 'X' },
     select: {
       platform: true,
       connectedAt: true,

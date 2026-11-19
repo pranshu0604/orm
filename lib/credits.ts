@@ -17,7 +17,7 @@ export async function hasCreditAvailable(
   if (tier === 'PAID') return creditsRemaining > 0;
 
   const freeUsed = await prisma.usageHistory.count({
-    where: { userId, usageType, successful: true },
+    where: { userId, usageType, platformType: 'X', successful: true },
   });
   return freeUsed < FREE_LIMITS[usageType] || creditsRemaining > 0;
 }
@@ -36,7 +36,7 @@ export async function recordUsage(params: {
     // FREE tier only draws on purchased credits once the free allotment for this usage type is used up.
     const limit = FREE_LIMITS[params.usageType as BillableUsageType] ?? 0;
     const freeUsed = await prisma.usageHistory.count({
-      where: { userId: params.userId, usageType: params.usageType, successful: true },
+      where: { userId: params.userId, usageType: params.usageType, platformType: params.platformType, successful: true },
     });
     if (freeUsed >= limit) creditsUsed = 1;
   }

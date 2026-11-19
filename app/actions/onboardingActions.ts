@@ -19,7 +19,7 @@ export async function getOnboardingStateAction() {
   const dbUser = await requireDbUser();
 
   const connections = await prisma.platformConnection.findMany({
-    where: { userId: dbUser.id },
+    where: { userId: dbUser.id, platform: 'X' },
     select: {
       platform: true,
       username: true,

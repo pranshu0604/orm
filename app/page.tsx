@@ -34,7 +34,7 @@ export default async function Home() {
   const [connections, reportsUsed, suggestionsUsed, totalReports, totalSuggestions, recentReports, recentSuggestions, systemStatus] =
     await Promise.all([
       prisma.platformConnection.findMany({
-        where: { userId: dbUser.id },
+        where: { userId: dbUser.id, platform: 'X' },
         select: {
           id: true,
           platform: true,
@@ -55,21 +55,21 @@ export default async function Home() {
         orderBy: { platform: 'asc' },
       }),
       prisma.usageHistory.count({
-        where: { userId: dbUser.id, usageType: 'PERFORMANCE_REPORT', successful: true },
+        where: { userId: dbUser.id, usageType: 'PERFORMANCE_REPORT', platformType: 'X', successful: true },
       }),
       prisma.usageHistory.count({
-        where: { userId: dbUser.id, usageType: 'CONTENT_SUGGESTION', successful: true },
+        where: { userId: dbUser.id, usageType: 'CONTENT_SUGGESTION', platformType: 'X', successful: true },
       }),
-      prisma.performanceReport.count({ where: { userId: dbUser.id } }),
-      prisma.contentSuggestion.count({ where: { userId: dbUser.id } }),
+      prisma.performanceReport.count({ where: { userId: dbUser.id, platformConnection: { platform: 'X' } } }),
+      prisma.contentSuggestion.count({ where: { userId: dbUser.id, platformConnection: { platform: 'X' } } }),
       prisma.performanceReport.findMany({
-        where: { userId: dbUser.id },
+        where: { userId: dbUser.id, platformConnection: { platform: 'X' } },
         orderBy: { generatedAt: 'desc' },
         take: ACTIVITY_FEED_SIZE,
         select: { id: true, generatedAt: true, score: true, platformConnection: { select: { username: true } } },
       }),
       prisma.contentSuggestion.findMany({
-        where: { userId: dbUser.id },
+        where: { userId: dbUser.id, platformConnection: { platform: 'X' } },
         orderBy: { generatedAt: 'desc' },
         take: ACTIVITY_FEED_SIZE,
         select: {

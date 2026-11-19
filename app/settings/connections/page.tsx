@@ -41,7 +41,7 @@ const TARGET_TIERS: { value: TargetTier; label: string }[] = [
   { value: 'EXPERT', label: 'Expert' },
 ];
 
-const PLATFORM_META: Record<PlatformType, { label: string; glyph: string; accent: 'cyan' }> = {
+const PLATFORM_META: Record<typeof PlatformType.X, { label: string; glyph: string; accent: 'cyan' }> = {
   X: { label: 'X (Twitter)', glyph: 'X', accent: 'cyan' },
 };
 

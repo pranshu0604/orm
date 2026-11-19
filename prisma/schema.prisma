@@ -63,7 +63,7 @@ model PlatformConnection {
 
 enum PlatformType {
   X
-  // add linkedin and insta later
+  GITHUB // Retained for historical records; active app queries use X.
 }
 
 enum UserTier {
@@ -206,6 +206,9 @@ enum SuggestionType {
   VOLUME
   FOLLOWING
   REPLY
+  COMMIT
+  PR
+  ISSUE
 }
 
 enum UsageType {
