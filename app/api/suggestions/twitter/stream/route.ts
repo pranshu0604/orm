@@ -40,6 +40,9 @@ export async function POST(req: NextRequest) {
   if (!platformConnectionId) {
     return new Response(JSON.stringify({ error: 'Platform connection ID is required' }), { status: 400 });
   }
+  if (typeof customPrompt === 'string' && customPrompt.length > 2000) {
+    return new Response(JSON.stringify({ error: 'Custom prompt must be 2000 characters or fewer' }), { status: 400 });
+  }
 
   const user = await prisma.user.findUnique({ where: { clerkId: userId } });
   if (!user) {

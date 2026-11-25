@@ -37,6 +37,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (tweetContext.length > 2000) {
+      return NextResponse.json({ error: 'Tweet text must be 2000 characters or fewer' }, { status: 400 });
+    }
 
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
     if (!user) {

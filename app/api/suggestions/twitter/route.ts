@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    if (typeof customPrompt === 'string' && customPrompt.length > 2000) {
+      return NextResponse.json({ error: 'Custom prompt must be 2000 characters or fewer' }, { status: 400 });
+    }
 
     // Get user from database
     const user = await prisma.user.findUnique({ where: { clerkId: userId } });
