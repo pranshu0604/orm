@@ -43,9 +43,12 @@ export default function CommandPalette() {
 
   const commands = useMemo<Command[]>(() => {
     const nav: Command[] = [
-      { id: 'nav-home', label: 'Go to Dashboard', group: 'Navigate', run: () => router.push('/') },
-      { id: 'nav-settings', label: 'Go to Settings / Connections', group: 'Navigate', run: () => router.push('/settings/connections') },
+      { id: 'nav-home', label: isSignedIn ? 'Go to Dashboard' : 'Go to Home', group: 'Navigate', run: () => router.push('/') },
+      { id: 'nav-demo', label: 'View live demo', group: 'Navigate', run: () => router.push('/demo') },
     ];
+    if (isSignedIn) {
+      nav.push({ id: 'nav-settings', label: 'Go to Settings / Connections', group: 'Navigate', run: () => router.push('/settings/connections') });
+    }
 
     if (!isSignedIn) {
       const account: Command[] = [

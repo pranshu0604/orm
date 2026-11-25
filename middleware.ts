@@ -1,8 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-// /dashboard is just a redirect to / now — leave it unprotected so a signed-out visit
-// lands on the new landing page instead of Clerk's hosted sign-in.
-const isProtectedRoute = createRouteMatcher(['/forum(.*)', '/onboarding(.*)'])
+// Public (no sign-in): /, /demo, /api/ai/warm, and the metadata routes (icons, OG image, robots, sitemap).
+// Only the onboarding wizard is gated here; API routes check auth themselves.
+const isProtectedRoute = createRouteMatcher(['/onboarding(.*)'])
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) await auth.protect();
@@ -10,7 +10,8 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skips Next internals, static files, and metadata routes so crawlers never hit Clerk's dev handshake.
+    '/((?!_next|robots\\.txt|sitemap\\.xml|opengraph-image|twitter-image|icon|apple-icon|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
 }
