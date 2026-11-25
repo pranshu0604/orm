@@ -4,12 +4,24 @@ import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@cl
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import StatusDots from "./hud/StatusDots";
+import AiStatus from "./hud/AiStatus";
 import TerminalButton from "./hud/TerminalButton";
 
-const NAV_LINKS = [
+const SIGNED_IN_LINKS = [
     { href: '/settings/connections', label: 'Settings' },
 ];
+
+function NavLink({ href, label }: { href: string; label: string }) {
+    return (
+        <Link
+            href={href}
+            className="relative py-2 font-mono text-xs text-gray-400 hover:text-white transition-colors duration-200 tracking-widest uppercase group"
+        >
+            {label}
+            <span className="absolute -bottom-px left-0 right-0 h-px bg-cyan-400/60 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+        </Link>
+    );
+}
 
 const LayoutHeader = () => {
     const [isMounted, setIsMounted] = useState(false);
@@ -86,24 +98,19 @@ const LayoutHeader = () => {
 
                 {/* Nav Links - Center */}
                 <nav className="hidden md:flex items-center gap-8">
-                    {NAV_LINKS.map((link) => (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className="relative py-2 font-mono text-xs text-gray-400 hover:text-white transition-colors duration-200 tracking-widest uppercase group"
-                        >
-                            {link.label}
-                            <span className="absolute -bottom-px left-0 right-0 h-px bg-cyan-400/60 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
-                        </Link>
-                    ))}
+                    <SignedOut>
+                        <NavLink href="/demo" label="Live demo" />
+                    </SignedOut>
+                    <SignedIn>
+                        {SIGNED_IN_LINKS.map((link) => (
+                            <NavLink key={link.href} href={link.href} label={link.label} />
+                        ))}
+                    </SignedIn>
                 </nav>
 
                 {/* Right side actions */}
                 <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 bg-[#0a0f1e]/80 border border-cyan-500/20">
-                        <StatusDots />
-                        <span className="font-mono text-[10px] text-gray-400 tracking-wider uppercase">System: Online</span>
-                    </div>
+                    <AiStatus />
 
                     <button
                         onClick={() => window.dispatchEvent(new CustomEvent('open-command-palette'))}
@@ -115,6 +122,12 @@ const LayoutHeader = () => {
 
                     <SignedOut>
                         <div className="flex items-center gap-2">
+                            <Link
+                                href="/demo"
+                                className="md:hidden font-mono text-xs text-gray-400 hover:text-white transition-colors tracking-widest uppercase px-2"
+                            >
+                                Demo
+                            </Link>
                             <SignInButton mode="modal">
                                 <button className="font-mono text-xs text-gray-400 hover:text-white transition-colors tracking-widest uppercase px-2">
                                     Sign In
