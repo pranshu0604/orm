@@ -4,12 +4,13 @@
  */
 
 import 'server-only';
+import { getAiServiceUrl } from './ai-url';
 
 export class AIServiceError extends Error {}
 
 export async function fetchAI(path: string, body: object, signal?: AbortSignal): Promise<Response> {
   const token = process.env.AI_SERVICE_TOKEN;
-  const url = process.env.AI_SERVICE_URL;
+  const url = getAiServiceUrl();
   if (!url || !token || token.length < 32) {
     throw new AIServiceError('The AI service is not configured.');
   }
@@ -201,19 +202,6 @@ class AIServiceClient {
       previous_reports: params.previousReports,
       previous_suggestions: params.previousSuggestions,
     });
-  }
-
-  /**
-   * Health check
-   */
-  async healthCheck(): Promise<{ status: string; service: string; version: string }> {
-    const response = await fetch(new URL('/v1/health', process.env.AI_SERVICE_URL ?? 'http://localhost:8000'), { signal: AbortSignal.timeout(2500) });
-
-    if (!response.ok) {
-      throw new Error('AI Service is not responding');
-    }
-
-    return response.json();
   }
 }
 
