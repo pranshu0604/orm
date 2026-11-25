@@ -55,7 +55,7 @@ export default function DemoView({ snapshot }: { snapshot: DemoSnapshot }) {
             {sample ? (
               <>
                 <span className="font-mono text-amber-400 text-xs uppercase tracking-widest mr-2">Sample data</span>
-                The live demo account could not be read right now, so this is a synthetic example of the output format, not a real account.
+                No stored report is available for the demo account right now, so this is a synthetic example of the output format, not a real account.
               </>
             ) : (
               <>

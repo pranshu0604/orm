@@ -189,7 +189,7 @@ export default function HomeLanding() {
 
           <motion.p variants={itemVariants} className="font-mono text-[11px] text-gray-500 max-w-xl mx-auto mb-12 leading-relaxed">
             <span className="text-gray-600 mr-1">&gt;</span>
-            Live scraping and report actions are limited to the owner&apos;s account on this deployment. The demo shows real stored output, read-only.
+            Live scraping and report actions are limited to the owner&apos;s account on this deployment. The demo shows the owner&apos;s latest stored output, read-only, or a labelled sample when none is stored.
           </motion.p>
 
           <motion.div
