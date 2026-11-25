@@ -1,6 +1,10 @@
 {
-  "name": "orm",
+  "name": "pran",
   "version": "0.1.0",
+  "description": "P.R.A.N. (Public Reputation and Analysis Node): AI-assisted analytics for X. Scheduled scraping, computed engagement metrics, and streamed LLM performance reports and content suggestions.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/pranshu0604/orm.git" },
+  "homepage": "https://orm-pran.vercel.app",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -8,8 +12,8 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "test": "jest",
-    "test:scraper": "jest __tests__/scrapers.test.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
     "update-nitter": "node scripts/update-nitter-instances.js",
     "scrape:twitter": "tsx scripts/scrape-twitter-data.ts",
     "send-digests": "tsx scripts/send-digests.ts"
