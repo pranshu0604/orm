@@ -8,7 +8,13 @@ The AI work lives in a separate FastAPI service, [pran-ai](https://github.com/pr
 
 ## Screenshots
 
-<!-- screenshots -->
+Captured from the live deployment. The demo currently shows the labelled sample report because no report is stored for the demo account.
+
+![Landing page](docs/screenshots/home-desktop.png)
+
+![Public demo (sample data)](docs/screenshots/demo-desktop.png)
+
+<img src="docs/screenshots/home-mobile.png" alt="Landing page on mobile" width="260">
 
 ## What it does
 
