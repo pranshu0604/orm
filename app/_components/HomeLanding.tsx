@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { SignInButton, SignUpButton } from '@clerk/nextjs';
 import TrueFocus from '../TrueFocus';
 import TerminalButton from '@/components/hud/TerminalButton';
@@ -39,8 +40,8 @@ const FEATURES = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
       </svg>
     ),
-    title: 'Real-time X Monitoring',
-    description: 'Track every mention, reply, and quote on X instantly',
+    title: 'Scheduled X Scraping',
+    description: 'Public profile and post stats are scraped on a schedule (GitHub Actions cron) and stored in Postgres',
     code: '01',
   },
   {
@@ -49,8 +50,8 @@ const FEATURES = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
       </svg>
     ),
-    title: 'AI-Powered Analysis',
-    description: 'Understand sentiment and identify reputation risks',
+    title: 'Streamed AI Reports',
+    description: 'Engagement metrics are computed in code; an LLM writes the assessment, streamed live as it generates',
     code: '02',
   },
   {
@@ -59,8 +60,8 @@ const FEATURES = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
       </svg>
     ),
-    title: 'Tweet Intelligence',
-    description: 'Optimize your content strategy with data-driven insights',
+    title: 'Suggestions with Context',
+    description: 'Post ideas, bio rewrites and reply drafts, with your previous reports used as context',
     code: '03',
   },
 ];
@@ -117,7 +118,7 @@ export default function HomeLanding() {
               animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-sm text-gray-300 font-medium">Live</span>
+            <span className="text-sm text-gray-300 font-medium">Portfolio project &middot; X only</span>
           </motion.div>
 
           <motion.div className="mb-8" variants={itemVariants}>
@@ -152,7 +153,7 @@ export default function HomeLanding() {
               <p className="text-base md:text-lg text-gray-300 leading-relaxed tracking-wide px-4 py-2">
                 <span className="font-mono text-cyan-400/80 text-xs mr-2">{'//'}</span>
                 <span className="font-light">
-                  AI-driven reputation intelligence for X. Monitor, analyze, and optimize your presence with surgical precision.
+                  AI-assisted reputation analytics for X. Scheduled profile scraping, performance reports and content suggestions for your account.
                 </span>
                 <br />
                 <span className="inline-block mt-2 font-mono text-sm text-gray-500">
@@ -163,22 +164,33 @@ export default function HomeLanding() {
                   >
                     &gt;
                   </motion.span>
-                  {' '}Every tweet. Every reply. Every second.
+                  {' '}Scrape. Measure. Report.
                 </span>
               </p>
             </div>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="flex items-center justify-center gap-4 mb-12">
+          <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center gap-4 mb-4">
+            <Link
+              href="/demo"
+              className="px-4 py-2 bg-[#0a0f1e]/60 border border-cyan-500/40 hover:border-cyan-400/60 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors duration-300 font-mono text-xs uppercase tracking-widest"
+            >
+              <span className="opacity-50">[</span> View live demo <span className="opacity-50">]</span>
+            </Link>
             <SignInButton mode="modal">
               <button className="font-mono text-sm text-gray-400 hover:text-white transition-colors tracking-widest uppercase px-2">
                 Sign In
               </button>
             </SignInButton>
             <SignUpButton mode="modal">
-              <TerminalButton>Get Started</TerminalButton>
+              <TerminalButton variant="ghost">Get Started</TerminalButton>
             </SignUpButton>
           </motion.div>
+
+          <motion.p variants={itemVariants} className="font-mono text-[11px] text-gray-500 max-w-xl mx-auto mb-12 leading-relaxed">
+            <span className="text-gray-600 mr-1">&gt;</span>
+            Live scraping and report actions are limited to the owner&apos;s account on this deployment. The demo shows real stored output, read-only.
+          </motion.p>
 
           <motion.div
             className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto"
@@ -232,7 +244,16 @@ export default function HomeLanding() {
                 </p>
               </div>
               <p className="text-[10px] text-gray-600 font-mono tracking-wider uppercase">
-                &copy; {new Date().getFullYear()} P.R.A.N. — All rights reserved
+                <a
+                  href="https://github.com/pranshu0604/orm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-cyan-400 transition-colors"
+                >
+                  Source on GitHub
+                </a>
+                <span className="mx-2 text-gray-700">|</span>
+                &copy; {new Date().getFullYear()} P.R.A.N. — MIT licensed
               </p>
             </div>
           </div>
