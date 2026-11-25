@@ -15,13 +15,25 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+const SITE_TITLE = 'P.R.A.N. \u2013 Public Reputation and Analysis Node'
+const SITE_DESCRIPTION =
+  'AI-assisted analytics for X (Twitter): scheduled profile scraping, computed engagement metrics, and LLM-written performance reports and content suggestions.'
+
 export const metadata: Metadata = {
-  title: 'P.R.A.N. \u2013 Public Reputation and Analysis Node',
-  description: 'Online Reputation Management',
-  icons: {
-    icon: '/PRAN-icon.png',
-    shortcut: '/PRAN-icon.png',
-    apple: '/PRAN-icon.png',
+  metadataBase: new URL('https://orm-pran.vercel.app'),
+  title: { default: SITE_TITLE, template: '%s | P.R.A.N.' },
+  description: SITE_DESCRIPTION,
+  applicationName: 'P.R.A.N.',
+  openGraph: {
+    type: 'website',
+    siteName: 'P.R.A.N.',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
 }
 
