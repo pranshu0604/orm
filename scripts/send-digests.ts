@@ -38,9 +38,9 @@ async function main() {
       });
       await markDigestSent(conn.id);
       sent++;
-      console.log(`✅ Sent digest to ${conn.user.email} (@${conn.username}) — ${posts.length} notable post(s)`);
+      console.log(`✅ Sent digest for @${conn.username} — ${posts.length} notable post(s)`);
     } catch (error) {
-      console.error(`❌ Failed to send digest for @${conn.username}:`, error);
+      console.error(`❌ Failed to send digest for @${conn.username}: ${error instanceof Error ? error.name : 'unknown error'}`);
     }
   }
 

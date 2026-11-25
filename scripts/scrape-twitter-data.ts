@@ -14,7 +14,7 @@ async function main() {
 
     const connections = await prisma.platformConnection.findMany({
       where: { platform: 'X', setupCompleted: true },
-      select: { id: true, username: true, user: { select: { email: true } } },
+      select: { id: true, username: true },
     });
 
     if (connections.length === 0) {
@@ -31,7 +31,7 @@ async function main() {
       }
 
       try {
-        console.log(`\n📱 Processing @${conn.username} (${conn.user.email})`);
+        console.log(`\n📱 Processing @${conn.username}`);
 
         const profileStats = await scrapeProfileStatsForUser(conn.username, nitterUrl);
         console.log(
